@@ -16,6 +16,29 @@ import RawPanel from './dashboard/RawPanel';
 import './dashboard/Dashboard.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const DEBUG_ENDPOINT =
+  'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
+const DEBUG_SESSION_ID = '601a3e';
+const DEBUG_RUN_ID = 'run_before';
+
+function debugLog(hypothesisId, location, message, data) {
+  fetch(DEBUG_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Debug-Session-Id': DEBUG_SESSION_ID,
+    },
+    body: JSON.stringify({
+      sessionId: DEBUG_SESSION_ID,
+      runId: DEBUG_RUN_ID,
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+}
 
 const DEMO_LIVE_DATA = {
   connected: true,
@@ -95,6 +118,17 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('cargo-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    // #region agent log
+    debugLog(
+      'H2',
+      'src/App.js:useEffect(isOtpVerified)',
+      'isOtpVerified changed',
+      { isOtpVerified },
+    );
+    // #endregion
+  }, [isOtpVerified]);
 
   const loadDemoData = useCallback(() => {
     const demoMotion = buildDemoMotionSeries();
@@ -282,7 +316,16 @@ function App() {
   const handleOtpSubmit = useCallback(
     (event) => {
       event.preventDefault();
-      if (otpInput.trim() === '55446') {
+      const isMatch = otpInput.trim() === '55446';
+
+      // #region agent log
+      debugLog('H2', 'src/App.js:handleOtpSubmit', 'OTP submit attempt', {
+        isMatch,
+        otpInputLen: otpInput.trim().length,
+      });
+      // #endregion
+
+      if (isMatch) {
         setIsOtpVerified(true);
         setOtpError('');
         return;

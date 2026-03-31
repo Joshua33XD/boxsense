@@ -3,6 +3,29 @@ import './EmailOtpCard.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || '';
 const STORAGE_KEY = 'boxesense_email_otp';
+const DEBUG_ENDPOINT =
+  'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
+const DEBUG_SESSION_ID = '601a3e';
+const DEBUG_RUN_ID = 'run_before';
+
+function debugLog(hypothesisId, location, message, data) {
+  fetch(DEBUG_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Debug-Session-Id': DEBUG_SESSION_ID,
+    },
+    body: JSON.stringify({
+      sessionId: DEBUG_SESSION_ID,
+      runId: DEBUG_RUN_ID,
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+}
 
 function readStored() {
   try {
@@ -34,9 +57,53 @@ export default function EmailOtpCard() {
   const [verifiedEmail, setVerifiedEmail] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    const raw = (() => {
+      try {
+        return sessionStorage.getItem(STORAGE_KEY);
+      } catch {
+        return null;
+      }
+    })();
     const stored = readStored();
+    const hasRaw = !!raw;
+    const hasStoredEmail = !!stored?.email;
+    const hasVerifiedAt = !!stored?.verifiedAt;
+
+    // #region agent log
+    debugLog(
+      'H1',
+      'src/dashboard/EmailOtpCard.js:mount',
+      'sessionStorage OTP presence',
+      { hasRaw, hasStoredEmail, hasVerifiedAt },
+    );
+    // #endregion
+
     setVerifiedEmail(stored?.email || null);
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    // #region agent log
+    debugLog(
+      'H1',
+      'src/dashboard/EmailOtpCard.js:verifiedEmail change',
+      'verifiedEmail state',
+      { hasVerifiedEmail: !!verifiedEmail },
+    );
+    // #endregion
+  }, [verifiedEmail]);
+
+  useEffect(() => {
+    return () => {
+      // #region agent log
+      debugLog(
+        'H3',
+        'src/dashboard/EmailOtpCard.js:unmount',
+        'EmailOtpCard unmounted',
+        {},
+      );
+      // #endregion
+    };
   }, []);
 
   useEffect(() => {
