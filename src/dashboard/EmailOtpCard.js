@@ -31,7 +31,13 @@ export default function EmailOtpCard() {
   const [phase, setPhase] = useState('idle');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState(() => readStored()?.email || null);
+  const [verifiedEmail, setVerifiedEmail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const stored = readStored();
+    setVerifiedEmail(stored?.email || null);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
