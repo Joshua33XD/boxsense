@@ -96,7 +96,6 @@ function buildDemoMotionSeries() {
 }
 
 function App() {
-  const [isOtpVerified, setIsOtpVerified] = useState(false);
   const [otpInput, setOtpInput] = useState('');
   const [otpError, setOtpError] = useState('');
   const [liveData, setLiveData] = useState({});
@@ -115,7 +114,6 @@ function App() {
   const motionBufRef = useRef([]);
   const socketRef = useRef(null);
   const didOverlayVisibleLogRef = useRef(false);
-  const didOverlayHiddenLogRef = useRef(false);
 
   // #region agent log
   if (typeof window !== 'undefined') {
@@ -127,46 +125,16 @@ function App() {
         protocol: window.location?.protocol,
         pathname: window.location?.pathname,
         API_BASE_URL,
-        isOtpVerified,
-      });
-    }
-    if (isOtpVerified && !didOverlayHiddenLogRef.current) {
-      didOverlayHiddenLogRef.current = true;
-      debugLog('H17', 'src/App.js:render', 'OTP overlay hidden (isOtpVerified=true)', {
-        host: window.location?.host,
-        protocol: window.location?.protocol,
-        pathname: window.location?.pathname,
-        API_BASE_URL,
-        isOtpVerified,
       });
     }
   }
   // #endregion
 
-  useEffect(() => {
-    // #region agent log
-    debugLog('H7', 'src/App.js:mount', 'App mounted', {
-      API_BASE_URL,
-      isOtpVerifiedInitial: isOtpVerified,
-    });
-    // #endregion
-  }, [isOtpVerified]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('cargo-theme', theme);
   }, [theme]);
-
-  useEffect(() => {
-    // #region agent log
-    debugLog(
-      'H2',
-      'src/App.js:useEffect(isOtpVerified)',
-      'isOtpVerified changed',
-      { isOtpVerified },
-    );
-    // #endregion
-  }, [isOtpVerified]);
 
   const loadDemoData = useCallback(() => {
     // #region agent log
@@ -384,55 +352,44 @@ function App() {
       });
       // #endregion
 
-      if (isMatch) {
-        setIsOtpVerified(true);
-        setOtpError('');
+      if (!isMatch) {
+        setOtpError('Invalid OTP. Please try again.');
         return;
       }
-      setOtpError('Invalid OTP. Please try again.');
+
+      // Fake behavior: OTP "accepts" visually, but does not unlock anything yet.
+      setOtpError('Demo: OTP accepted (no unlock yet).');
     },
     [otpInput],
   );
 
   return (
     <div className="dashboard-root">
-      {!isOtpVerified ? (
-        <div className="otp-overlay" role="dialog" aria-modal="true" aria-labelledby="otp-title">
-          <form className="otp-modal" onSubmit={handleOtpSubmit}>
-            <h2 id="otp-title" className="otp-title">
-              OTP
-            </h2>
-            <input
-              aria-label="OTP"
-              className="otp-input"
-              type="password"
-              inputMode="numeric"
-              autoFocus
-              value={otpInput}
-              onChange={(e) => {
-                const next = e.target.value;
-                setOtpInput(next);
-                if (otpError) setOtpError('');
-
-                // Auto-verify once the user has entered the full code.
-                const trimmed = next.trim();
-                const isMatch = trimmed === OTP_CODE;
-                if (trimmed.length === OTP_CODE.length && isMatch) {
-                  setIsOtpVerified(true);
-                  setOtpError('');
-                } else if (trimmed.length === OTP_CODE.length && !isMatch) {
-                  setOtpError('Invalid OTP. Please try again.');
-                }
-              }}
-              placeholder="OTP"
-            />
-            {otpError ? <p className="otp-error">{otpError}</p> : null}
-            <button type="submit" className="otp-btn" style={{ display: 'none' }}>
-              Enter
-            </button>
-          </form>
-        </div>
-      ) : null}
+      <div className="otp-overlay" role="dialog" aria-modal="true" aria-labelledby="otp-title">
+        <form className="otp-modal" onSubmit={handleOtpSubmit}>
+          <h2 id="otp-title" className="otp-title">
+            OTP
+          </h2>
+          <input
+            aria-label="OTP"
+            className="otp-input"
+            type="password"
+            inputMode="numeric"
+            autoFocus
+            value={otpInput}
+            onChange={(e) => {
+              const next = e.target.value;
+              setOtpInput(next);
+              if (otpError) setOtpError('');
+            }}
+            placeholder="OTP"
+          />
+          {otpError ? <p className="otp-error">{otpError}</p> : null}
+          <button type="submit" className="otp-btn">
+            Enter
+          </button>
+        </form>
+      </div>
       <Sidebar
         activeId={activeNav}
         onNavigate={onNavigate}
