@@ -11,7 +11,7 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 
 # ---------------- CONFIG ----------------
-ESP_ADDRESS = "DC:1E:D5:63:35:92"
+ESP_ADDRESS = "9C:13:9E:CE:8F:B2"
 CHAR_UUID = "abcd1234-1234-1234-1234-1234567890ab"
 CSV_FILE = "drop_log.csv"
 MAX_RAW_DATA_ENTRIES = 1000

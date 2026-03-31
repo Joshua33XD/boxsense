@@ -41,60 +41,6 @@ function debugLog(hypothesisId, location, message, data) {
   }).catch(() => {});
 }
 
-const DEMO_LIVE_DATA = {
-  connected: true,
-  g: '3.42',
-  height: '0.5',
-  roll: '14.8',
-  pitch: '-8.6',
-  yaw: '27.4',
-  temp: '28.4',
-  humidity: '61.2',
-  ldr: '73',
-};
-
-const DEMO_PEAK_EVENTS = [
-  { parameter: 'G-Force', value: 4.8, timestamp: '2026-03-29 20:14:08' },
-  { parameter: 'Temperature', value: 31.2, timestamp: '2026-03-29 20:10:44' },
-  { parameter: 'Humidity', value: 68.4, timestamp: '2026-03-29 20:09:57' },
-  { parameter: 'LDR', value: 82.0, timestamp: '2026-03-29 20:08:33' },
-  { parameter: 'FLEX', value: 46.5, timestamp: '2026-03-29 20:06:11' },
-  { parameter: 'Height', value: 1.7, timestamp: '2026-03-29 20:04:52' },
-  { parameter: 'G-Force', value: 3.6, timestamp: '2026-03-29 20:02:25' },
-];
-
-const DEMO_RAW_DATA = [
-  { timestamp: '20:14:08', data: 'G=4.80g, TEMP=28.4C, HUM=61.2%, LDR=73%, FLEX=39%' },
-  { timestamp: '20:13:54', data: 'G=3.42g, ROLL=14.8, PITCH=-8.6, YAW=27.4' },
-  { timestamp: '20:13:41', data: 'G=2.18g, TEMP=28.2C, HUM=60.9%, LDR=71%, FLEX=35%' },
-  { timestamp: '20:13:28', data: 'G=1.44g, TEMP=28.1C, HUM=60.6%, LDR=70%, FLEX=33%' },
-  { timestamp: '20:13:15', data: 'G=0.98g, TEMP=28.0C, HUM=60.4%, LDR=69%, FLEX=31%' },
-];
-
-const DEMO_DROPS = [
-  { pc_time: '20:14:08', peak_g: '4.8', ldr: '73', flex: '39' },
-  { pc_time: '20:11:42', peak_g: '3.9', ldr: '71', flex: '36' },
-  { pc_time: '20:08:12', peak_g: '2.8', ldr: '68', flex: '29' },
-  { pc_time: '20:05:46', peak_g: '3.3', ldr: '74', flex: '35' },
-  { pc_time: '20:02:18', peak_g: '4.2', ldr: '77', flex: '41' },
-  { pc_time: '19:58:39', peak_g: '2.6', ldr: '64', flex: '27' },
-];
-
-function buildDemoMotionSeries() {
-  const now = Date.now();
-  const values = [
-    0.62, 0.84, 1.08, 0.93, 1.24, 1.46, 1.18, 1.52, 1.74, 1.38,
-    1.12, 1.28, 1.66, 2.04, 1.82, 1.36, 1.18, 1.42, 2.12, 2.86,
-    3.42, 2.34, 1.96, 1.28, 1.08, 0.94, 1.16, 1.34, 1.22, 1.04,
-  ];
-
-  return values.map((g, index) => ({
-    t: now - (values.length - index - 1) * 2000,
-    g,
-    impact: g >= 2.8 ? g : null,
-  }));
-}
-
 function App() {
   const [liveData, setLiveData] = useState({});
   const [peakEvents, setPeakEvents] = useState([]);
@@ -108,7 +54,6 @@ function App() {
     () => localStorage.getItem('cargo-theme') || 'dark',
   );
   const [motionSeries, setMotionSeries] = useState([]);
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [orderIdInput, setOrderIdInput] = useState('');
   const [otpInput, setOtpInput] = useState('');
@@ -122,23 +67,6 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('cargo-theme', theme);
   }, [theme]);
-
-  const loadDemoData = useCallback(() => {
-    // #region agent log
-    debugLog('H8', 'src/App.js:loadDemoData', 'Loading demo data', {});
-    // #endregion
-    const demoMotion = buildDemoMotionSeries();
-    motionBufRef.current = demoMotion;
-    setLiveData(DEMO_LIVE_DATA);
-    setPeakEvents(DEMO_PEAK_EVENTS);
-    setRawData(DEMO_RAW_DATA);
-    setDrops(DEMO_DROPS);
-    setMotionSeries(demoMotion);
-    setEspConnected(true);
-    setIsDemoMode(true);
-    setLastUpdate(new Date());
-    setLoading(false);
-  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -195,21 +123,19 @@ function App() {
       setPeakEvents(Array.isArray(peakEventsData) ? peakEventsData : []);
       setRawData(Array.isArray(rawDataData) ? rawDataData : []);
       setDrops(dropsData);
-      setIsDemoMode(false);
-
       setLastUpdate(new Date());
       setLoading(false);
     } catch (error) {
-      // #region agent log
-      debugLog('H9', 'src/App.js:fetchData', 'Dashboard fetch failed, fallback demo', {
-        errorName: error?.name,
-        errorMsg: error?.message,
-      });
-      // #endregion
       console.error('Error fetching data:', error);
-      loadDemoData();
+      setLiveData({});
+      setPeakEvents([]);
+      setRawData([]);
+      setDrops([]);
+      setEspConnected(false);
+      setLastUpdate(new Date());
+      setLoading(false);
     }
-  }, [loadDemoData]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -231,7 +157,6 @@ function App() {
     socket.on('esp_status', (payload) => {
       if (payload && typeof payload.connected === 'boolean') {
         setEspConnected(payload.connected);
-        setIsDemoMode(false);
       }
     });
 
@@ -240,35 +165,30 @@ function App() {
         setLiveData((prev) => ({ ...prev, ...payload }));
         setLastUpdate(new Date());
         if (payload.connected === true) setEspConnected(true);
-        setIsDemoMode(false);
       }
     });
 
     socket.on('peak_event', (event) => {
       if (event && typeof event === 'object') {
         setPeakEvents((prev) => [event, ...prev].slice(0, 1000));
-        setIsDemoMode(false);
       }
     });
 
     socket.on('peak_events_batch', (events) => {
       if (events && Array.isArray(events)) {
         setPeakEvents(events);
-        setIsDemoMode(false);
       }
     });
 
     socket.on('raw_data', (entry) => {
       if (entry && typeof entry === 'object') {
         setRawData((prev) => [...prev, entry].slice(-1000));
-        setIsDemoMode(false);
       }
     });
 
     socket.on('raw_data_batch', (entries) => {
       if (entries && Array.isArray(entries)) {
         setRawData(entries);
-        setIsDemoMode(false);
       }
     });
 
@@ -296,19 +216,6 @@ function App() {
       ]);
     setMotionSeries(motionBufRef.current.slice(-400));
   }, [liveData?.g]);
-
-  useEffect(() => {
-    if (!isDemoMode) return undefined;
-    let high = false;
-    const id = setInterval(() => {
-      high = !high;
-      setLiveData((prev) => ({
-        ...prev,
-        height: high ? '1.8' : '0.5',
-      }));
-    }, 5000);
-    return () => clearInterval(id);
-  }, [isDemoMode]);
 
   const handleRefresh = useCallback(() => {
     setLoading(true);
@@ -424,11 +331,11 @@ function App() {
       <Sidebar
         activeId={activeNav}
         onNavigate={onNavigate}
-        espConnected={espConnected || isDemoMode}
+        espConnected={espConnected}
       />
       <div className="dashboard-main-wrap">
         <TopBar
-          espConnected={espConnected || isDemoMode}
+          espConnected={espConnected}
           lastUpdate={lastUpdate}
           theme={theme}
           loading={loading}
@@ -444,7 +351,7 @@ function App() {
             <SafetyCard
               liveData={liveData}
               peakEvents={peakEvents}
-              espConnected={espConnected || isDemoMode}
+              espConnected={espConnected}
             />
             <OrientationCard liveData={liveData} />
             <EnvironmentCard liveData={liveData} />
