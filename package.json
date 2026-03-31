@@ -4,6 +4,7 @@
   "description": "Professional ESP32 Drop Detection Dashboard",
   "private": true,
   "dependencies": {
+    "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "concurrently": "^9.0.0",
     "cors": "^2.8.5",

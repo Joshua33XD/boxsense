@@ -68,7 +68,7 @@ export default function OrientationCard({ liveData }) {
       <div className="cargo-orient-v2-body">
         <div className="cargo-orient-v2-viz">
           <div className="cargo-orient-v2-hint">
-            {modelReady ? 'Live model view' : 'Live 3D view (drop GLB to use exact model)'}
+            {modelReady ? 'Live model view' : 'Live 3D view'}
           </div>
           <div
             className="cargo-orient-v2-stage"
