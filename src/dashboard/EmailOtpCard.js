@@ -1,31 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './EmailOtpCard.css';
 
-const API_BASE = process.env.REACT_APP_API_URL || '';
 const STORAGE_KEY = 'boxesense_email_otp';
-const DEBUG_ENDPOINT =
-  'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
-const DEBUG_SESSION_ID = '601a3e';
-const DEBUG_RUN_ID = 'run_before';
-
-function debugLog(hypothesisId, location, message, data) {
-  fetch(DEBUG_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': DEBUG_SESSION_ID,
-    },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION_ID,
-      runId: DEBUG_RUN_ID,
-      hypothesisId,
-      location,
-      message,
-      data,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-}
+const FIXED_OTP = '55446';
 
 function readStored() {
   try {
@@ -41,179 +18,59 @@ function writeStored(email) {
   sessionStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
-      email,
+      orderId: email,
       verifiedAt: new Date().toISOString(),
     }),
   );
 }
 
-export default function EmailOtpCard() {
-  const [serverOk, setServerOk] = useState(null);
-  const [email, setEmail] = useState('');
+export default function EmailOtpCard({ onVerifiedChange = () => {} }) {
+  const [orderId, setOrderId] = useState('');
   const [code, setCode] = useState('');
   const [phase, setPhase] = useState('idle');
   const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
   const [verifiedEmail, setVerifiedEmail] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const didInitialRenderLogRef = useRef(false);
-  if (!didInitialRenderLogRef.current) {
-    didInitialRenderLogRef.current = true;
-    // #region agent log
-    // Log in render so we can confirm whether this component is actually mounted in Vercel build.
-    try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
-      const stored = (() => {
-        try {
-          return raw ? JSON.parse(raw) : null;
-        } catch {
-          return null;
-        }
-      })();
-      debugLog('E1', 'src/dashboard/EmailOtpCard.js:render', 'EmailOtpCard initial render', {
-        hasRaw: !!raw,
-        hasStoredEmail: !!stored?.email,
-        hasVerifiedAt: !!stored?.verifiedAt,
-      });
-    } catch {
-      debugLog('E1', 'src/dashboard/EmailOtpCard.js:render', 'EmailOtpCard initial render', {
-        hasRaw: false,
-        hasStoredEmail: false,
-        hasVerifiedAt: false,
-      });
-    }
-    // #endregion
-  }
-
   useEffect(() => {
-    const raw = (() => {
-      try {
-        return sessionStorage.getItem(STORAGE_KEY);
-      } catch {
-        return null;
-      }
-    })();
     const stored = readStored();
-    const hasRaw = !!raw;
-    const hasStoredEmail = !!stored?.email;
-    const hasVerifiedAt = !!stored?.verifiedAt;
-
-    // #region agent log
-    debugLog(
-      'H1',
-      'src/dashboard/EmailOtpCard.js:mount',
-      'sessionStorage OTP presence',
-      { hasRaw, hasStoredEmail, hasVerifiedAt },
-    );
-    // #endregion
-
-    setVerifiedEmail(stored?.email || null);
+    const storedOrderId = stored?.orderId || stored?.email || null;
+    setVerifiedEmail(storedOrderId);
+    onVerifiedChange(!!storedOrderId);
     setLoading(false);
-  }, []);
+  }, [onVerifiedChange]);
 
-  useEffect(() => {
-    // #region agent log
-    debugLog(
-      'H1',
-      'src/dashboard/EmailOtpCard.js:verifiedEmail change',
-      'verifiedEmail state',
-      { hasVerifiedEmail: !!verifiedEmail },
-    );
-    // #endregion
-  }, [verifiedEmail]);
-
-  useEffect(() => {
-    return () => {
-      // #region agent log
-      debugLog(
-        'H3',
-        'src/dashboard/EmailOtpCard.js:unmount',
-        'EmailOtpCard unmounted',
-        {},
-      );
-      // #endregion
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${API_BASE}/api/otp/config`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setServerOk(!!d.configured);
-      })
-      .catch(() => {
-        if (!cancelled) setServerOk(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const onSend = useCallback(async () => {
+  const onSend = useCallback(() => {
     setMessage('');
-    setBusy(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/otp/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (data.ok) {
-        setPhase('code_sent');
-        setMessage('Check your inbox for the verification code.');
-      } else if (r.status === 429) {
-        setMessage(
-          `Please wait ${data.retry_after_s ?? ''}s before requesting another code.`,
-        );
-      } else {
-        setMessage(data.detail || data.error || 'Could not send email.');
-      }
-    } catch {
-      setMessage('Network error — is the API running?');
-    } finally {
-      setBusy(false);
-    }
-  }, [email]);
+    setPhase('code_sent');
+    setCode('');
+  }, []);
 
-  const onVerify = useCallback(async () => {
-    setMessage('');
-    setBusy(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/otp/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          code: code.trim(),
-        }),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (data.ok && data.verified) {
-        const em = email.trim();
-        writeStored(em);
-        setVerifiedEmail(em);
-        setPhase('verified');
-        setMessage('');
-      } else {
-        setMessage(data.error === 'invalid_or_expired' ? 'Invalid or expired code.' : 'Verification failed.');
-      }
-    } catch {
-      setMessage('Network error.');
-    } finally {
-      setBusy(false);
+  const onVerify = useCallback(() => {
+    const entered = code.trim();
+    if (entered === FIXED_OTP) {
+      const em = orderId.trim();
+      writeStored(em);
+      setVerifiedEmail(em);
+      onVerifiedChange(true);
+      setPhase('verified');
+      setMessage('');
+      return;
     }
-  }, [email, code]);
+
+    setMessage('Invalid OTP. Please try again.');
+  }, [orderId, code]);
 
   const onLogout = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
     setVerifiedEmail(null);
+    onVerifiedChange(false);
     setPhase('idle');
     setCode('');
     setMessage('');
-  }, []);
+  }, [onVerifiedChange]);
+
+  if (loading) return null;
 
   if (verifiedEmail) {
     return (
@@ -231,29 +88,20 @@ export default function EmailOtpCard() {
 
   return (
     <div className="dashboard-card email-otp-card" id="dash-email-otp">
-      <div className="dashboard-card-title">Email verification</div>
-
-      {serverOk === false && (
-        <p className="email-otp-warn">
-          Server is not configured for email OTP. Set <code>OTP_PEPPER</code> and{' '}
-          <code>MAIL_FROM</code> (plus SMTP or Resend) on the Python server — see{' '}
-          <code>email_otp/env.example</code>.
-        </p>
-      )}
+      <div className="dashboard-card-title">Order verification</div>
 
       <div className="email-otp-fields">
         <label className="email-otp-label" htmlFor="email-otp-input">
-          Email
+          Order ID
         </label>
         <input
           id="email-otp-input"
           className="email-otp-input"
-          type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={busy || serverOk === false}
+          type="text"
+          autoComplete="off"
+          placeholder="Enter your order ID"
+          value={orderId}
+          onChange={(e) => setOrderId(e.target.value)}
         />
 
         {phase === 'code_sent' && (
@@ -266,11 +114,10 @@ export default function EmailOtpCard() {
               className="email-otp-input email-otp-input-code"
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="6 digits"
+              placeholder="Enter OTP"
               maxLength={12}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\s/g, ''))}
-              disabled={busy}
             />
           </>
         )}
@@ -283,25 +130,24 @@ export default function EmailOtpCard() {
           <button
             type="button"
             className="cargo-refresh-btn email-otp-btn"
-            disabled={busy || !email.trim() || serverOk === false}
+            disabled={!orderId.trim()}
             onClick={onSend}
           >
-            {busy ? 'Sending…' : 'Send code'}
+            Send code
           </button>
         ) : (
           <>
             <button
               type="button"
               className="cargo-refresh-btn email-otp-btn"
-              disabled={busy || code.trim().length < 4}
+              disabled={code.trim().length < 4}
               onClick={onVerify}
             >
-              {busy ? 'Checking…' : 'Verify'}
+              Verify
             </button>
             <button
               type="button"
               className="email-otp-secondary"
-              disabled={busy}
               onClick={onSend}
             >
               Resend
