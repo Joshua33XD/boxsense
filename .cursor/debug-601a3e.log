@@ -1,1 +1,1 @@
-{"sessionId":"601a3e","runId":"run_before","hypothesisId":"H10","location":"src/App.js:socket","message":"Socket connect_error","data":{"errName":"Error","errMessage":"websocket error"},"timestamp":1774941640746}
+{"sessionId":"601a3e","runId":"run_before","hypothesisId":"H10","location":"src/App.js:socket","message":"Socket connect_error","data":{"errName":"Error","errMessage":"websocket error"},"timestamp":1774941949396}

@@ -16,7 +16,6 @@ import RawPanel from './dashboard/RawPanel';
 import './dashboard/Dashboard.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const OTP_CODE = '55446';
 const DEBUG_ENDPOINT =
   'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
 const DEBUG_SESSION_ID = '601a3e';
@@ -96,8 +95,6 @@ function buildDemoMotionSeries() {
 }
 
 function App() {
-  const [otpInput, setOtpInput] = useState('');
-  const [otpError, setOtpError] = useState('');
   const [liveData, setLiveData] = useState({});
   const [peakEvents, setPeakEvents] = useState([]);
   const [rawData, setRawData] = useState([]);
@@ -113,22 +110,7 @@ function App() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const motionBufRef = useRef([]);
   const socketRef = useRef(null);
-  const didOverlayVisibleLogRef = useRef(false);
-
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    // Log at first client render so we can correlate UI disappearance with state.
-    if (!didOverlayVisibleLogRef.current) {
-      didOverlayVisibleLogRef.current = true;
-      debugLog('H16', 'src/App.js:render', 'OTP overlay initial render', {
-        host: window.location?.host,
-        protocol: window.location?.protocol,
-        pathname: window.location?.pathname,
-        API_BASE_URL,
-      });
-    }
-  }
-  // #endregion
+  
 
 
   useEffect(() => {
@@ -340,56 +322,8 @@ function App() {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
   }, []);
 
-  const handleOtpSubmit = useCallback(
-    (event) => {
-      event.preventDefault();
-      const isMatch = otpInput.trim() === OTP_CODE;
-
-      // #region agent log
-      debugLog('H2', 'src/App.js:handleOtpSubmit', 'OTP submit attempt', {
-        isMatch,
-        otpInputLen: otpInput.trim().length,
-      });
-      // #endregion
-
-      if (!isMatch) {
-        setOtpError('Invalid OTP. Please try again.');
-        return;
-      }
-
-      // Fake behavior: OTP "accepts" visually, but does not unlock anything yet.
-      setOtpError('Demo: OTP accepted (no unlock yet).');
-    },
-    [otpInput],
-  );
-
   return (
     <div className="dashboard-root">
-      <div className="otp-overlay" role="dialog" aria-modal="true" aria-labelledby="otp-title">
-        <form className="otp-modal" onSubmit={handleOtpSubmit}>
-          <h2 id="otp-title" className="otp-title">
-            OTP
-          </h2>
-          <input
-            aria-label="OTP"
-            className="otp-input"
-            type="password"
-            inputMode="numeric"
-            autoFocus
-            value={otpInput}
-            onChange={(e) => {
-              const next = e.target.value;
-              setOtpInput(next);
-              if (otpError) setOtpError('');
-            }}
-            placeholder="OTP"
-          />
-          {otpError ? <p className="otp-error">{otpError}</p> : null}
-          <button type="submit" className="otp-btn">
-            Enter
-          </button>
-        </form>
-      </div>
       <Sidebar
         activeId={activeNav}
         onNavigate={onNavigate}
