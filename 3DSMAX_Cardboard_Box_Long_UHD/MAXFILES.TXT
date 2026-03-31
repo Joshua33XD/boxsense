@@ -1,0 +1,9 @@
+﻿C:\Users\Yusuf\Desktop\t$m$p$$$\Cardboard Box Long UHD.max
+C:\Users\Yusuf\Desktop\t$m$p$$$\MAXFILES.TXT
+D:\Yusuf\Turbosquid\Road Signboards\SKY.hdr
+C:\Program Files\Autodesk\3ds Max 2022\maps\uvwunwrap\UV_Checker.png
+D:\Yusuf\Turbosquid\CARDBOARD BOXES NEW (3DSMAX 2022)\Cardboard Box Long\Tex\Cardboard Box_Long_Material__32_BaseColor.png
+D:\Yusuf\Turbosquid\CARDBOARD BOXES NEW (3DSMAX 2022)\Cardboard Box Long\Tex\Cardboard Box_Long_Material__32_Normal.png
+D:\Yusuf\Turbosquid\CARDBOARD BOXES NEW (3DSMAX 2022)\Cardboard Box Long\Tex\Cardboard Box_Long_Material__32_Height.png
+D:\Yusuf\Turbosquid\CARDBOARD BOXES NEW (3DSMAX 2022)\Cardboard Box Long\Tex\Cardboard Box_Long_Material__32_Roughness.png
+D:\Yusuf\Turbosquid\CARDBOARD BOXES NEW (3DSMAX 2022)\Cardboard Box Long\Tex\Cardboard Box_Long_Material__32_Metallic.png

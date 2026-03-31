@@ -1,0 +1,39 @@
+/**
+ * BoxSense dashboard tokens — dark + light
+ */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
+:root,
+[data-theme='dark'] {
+  --cargo-font: 'DM Sans', system-ui, sans-serif;
+  --cargo-bg: #10141d;
+  --cargo-bg-elevated: #131a26;
+  --cargo-surface: #161c28;
+  --cargo-card: #1a2230;
+  --cargo-border: rgba(255, 255, 255, 0.08);
+  --cargo-text: #f1f5f9;
+  --cargo-text-muted: #94a3b8;
+  --cargo-text-subtle: #64748b;
+  --cargo-accent: #3b82f6;
+  --cargo-safe: #22c55e;
+  --cargo-warn: #eab308;
+  --cargo-danger: #ef4444;
+  --cargo-chart-grid: rgba(148, 163, 184, 0.12);
+  --cargo-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --cargo-radius: 14px;
+  --cargo-radius-sm: 10px;
+  --sidebar-w: 232px;
+}
+
+[data-theme='light'] {
+  --cargo-bg: #eceff3;
+  --cargo-bg-elevated: #e2e6ec;
+  --cargo-surface: #ffffff;
+  --cargo-card: #ffffff;
+  --cargo-border: rgba(15, 23, 42, 0.08);
+  --cargo-text: #0f172a;
+  --cargo-text-muted: #475569;
+  --cargo-text-subtle: #64748b;
+  --cargo-chart-grid: rgba(15, 23, 42, 0.08);
+  --cargo-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+}

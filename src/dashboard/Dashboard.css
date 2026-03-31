@@ -1,0 +1,316 @@
+/* Staggered entrance + layout */
+@keyframes dashFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dashAmbientFloat {
+  0% {
+    transform: translate3d(-8%, -4%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 3%, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-5%, 6%, 0) scale(0.98);
+  }
+}
+
+@keyframes dashAmbientDrift {
+  0% {
+    transform: translate3d(10%, -8%, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-6%, 6%, 0) scale(0.96);
+  }
+  100% {
+    transform: translate3d(8%, 10%, 0) scale(1.08);
+  }
+}
+
+@keyframes dashGridTravel {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(56px);
+  }
+}
+
+@keyframes dashSheenSweep {
+  0% {
+    transform: translateX(-130%);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.28;
+  }
+  55% {
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateX(130%);
+    opacity: 0;
+  }
+}
+
+.dashboard-root {
+  min-height: 100vh;
+  display: flex;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.14), transparent 24%),
+    var(--cargo-bg);
+  color: var(--cargo-text);
+  font-family: var(--cargo-font);
+}
+
+.dashboard-root::before,
+.dashboard-root::after {
+  content: '';
+  position: fixed;
+  width: 38rem;
+  height: 38rem;
+  border-radius: 50%;
+  filter: blur(24px);
+  pointer-events: none;
+  z-index: -2;
+  opacity: 0.55;
+}
+
+.dashboard-root::before {
+  top: -12rem;
+  right: -10rem;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.24) 0%, rgba(59, 130, 246, 0.05) 44%, transparent 72%);
+  animation: dashAmbientFloat 18s ease-in-out infinite alternate;
+}
+
+.dashboard-root::after {
+  left: -10rem;
+  bottom: -14rem;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.2) 0%, rgba(59, 130, 246, 0.05) 46%, transparent 72%);
+  animation: dashAmbientDrift 22s ease-in-out infinite alternate;
+}
+
+.dashboard-main-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-main-wrap::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), transparent 85%);
+  opacity: 0.2;
+  pointer-events: none;
+  z-index: -1;
+  animation: dashGridTravel 16s linear infinite;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 1.25rem 1.5rem 2rem;
+  overflow-x: hidden;
+}
+
+.dashboard-content--scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scroll targets: clear sticky top bar + mobile bottom nav */
+[id^='dash-'] {
+  scroll-margin-top: 5.25rem;
+  scroll-margin-bottom: 5.5rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.dashboard-grid-middle {
+  grid-column: 1 / -1;
+}
+
+/* Cards: motion + hover polish */
+.dashboard-card {
+  background: var(--cargo-card);
+  border: 1px solid var(--cargo-border);
+  border-radius: var(--cargo-radius);
+  box-shadow: var(--cargo-shadow);
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  animation: dashFadeUp 0.58s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease,
+    border-color 0.2s ease,
+    background 0.28s ease;
+}
+
+.dashboard-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.1) 46%, transparent 100%);
+  transform: translateX(-130%);
+  opacity: 0;
+  pointer-events: none;
+  animation: dashSheenSweep 8.5s ease-in-out infinite;
+}
+
+.dashboard-card::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--cargo-radius) - 1px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+}
+
+.dashboard-grid .dashboard-card:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.dashboard-grid .dashboard-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.dashboard-grid .dashboard-card:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.dashboard-grid .dashboard-card:only-child {
+  animation-delay: 0.08s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dashboard-card:hover {
+    transform: translateY(-6px) scale(1.005);
+    box-shadow:
+      0 18px 45px rgba(15, 23, 42, 0.2),
+      0 0 0 1px rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.28);
+  }
+
+  [data-theme='dark'] .dashboard-card:hover {
+    box-shadow:
+      0 22px 56px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(96, 165, 250, 0.14),
+      0 0 30px rgba(59, 130, 246, 0.14);
+  }
+}
+
+.dashboard-card-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cargo-text-subtle);
+  margin-bottom: 1rem;
+}
+
+.dashboard-card-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* Mobile: single column + room for bottom nav */
+@media (max-width: 900px) {
+  .dashboard-content {
+    padding: 1rem 1rem calc(5.75rem + env(safe-area-inset-bottom, 0));
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  [id^='dash-'] {
+    scroll-margin-top: 4.5rem;
+    scroll-margin-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0));
+  }
+}
+
+@media (max-width: 1200px) and (min-width: 901px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dashboard-card--wide-top {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding-left: max(1rem, env(safe-area-inset-left, 0));
+    padding-right: max(1rem, env(safe-area-inset-right, 0));
+  }
+
+  .dashboard-card {
+    padding: 1.1rem;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-card {
+    animation: dashFadeIn 0.35s ease backwards;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    backdrop-filter: none;
+  }
+
+  .dashboard-grid .dashboard-card:nth-child(1),
+  .dashboard-grid .dashboard-card:nth-child(2),
+  .dashboard-grid .dashboard-card:nth-child(3),
+  .dashboard-grid .dashboard-card:only-child {
+    animation-delay: 0s;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .dashboard-card:hover {
+      transform: none;
+    }
+  }
+
+  .dashboard-card::before,
+  .dashboard-root::before,
+  .dashboard-root::after,
+  .dashboard-main-wrap::before {
+    animation: none;
+  }
+}

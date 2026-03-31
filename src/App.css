@@ -1,0 +1,98 @@
+/* Layout helpers only — tokens live in cargo-theme.css */
+
+@keyframes appPulseText {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.cargo-loading {
+  padding: 1rem 0 1.5rem;
+  color: var(--cargo-text-muted);
+  font-size: 0.9rem;
+  animation: appPulseText 1.4s ease-in-out infinite;
+}
+
+.otp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 22, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.otp-modal {
+  width: 100%;
+  max-width: 380px;
+  background: var(--cargo-card-bg, #171b24);
+  border: 1px solid var(--cargo-border, #2a3347);
+  border-radius: 14px;
+  padding: 1.1rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+}
+
+.otp-title {
+  margin: 0 0 0.45rem;
+  color: var(--cargo-text-primary, #f7fbff);
+  font-size: 1.1rem;
+}
+
+.otp-subtitle {
+  margin: 0 0 0.9rem;
+  color: var(--cargo-text-muted, #9ba8c0);
+  font-size: 0.9rem;
+}
+
+.otp-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--cargo-border, #2a3347);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  background: var(--cargo-surface-2, #0f1522);
+  color: var(--cargo-text-primary, #f7fbff);
+  margin-bottom: 0.7rem;
+}
+
+.otp-input:focus {
+  outline: none;
+  border-color: var(--cargo-accent, #5ab5ff);
+  box-shadow: 0 0 0 2px rgba(90, 181, 255, 0.2);
+}
+
+.otp-error {
+  margin: 0 0 0.7rem;
+  color: #ff7a7a;
+  font-size: 0.86rem;
+}
+
+.otp-btn {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 0.68rem 0.8rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--cargo-accent, #5ab5ff);
+  color: #0a1220;
+}
+
+.otp-btn:hover {
+  filter: brightness(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cargo-loading {
+    animation: none;
+  }
+}

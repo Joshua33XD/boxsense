@@ -1,0 +1,22 @@
+.data-visualization {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+}
+
+.visualization-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.visualization-value {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}

@@ -1,0 +1,152 @@
+.floating-elements {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.floating-circle,
+.floating-square,
+.floating-triangle {
+  position: absolute;
+  opacity: 0.1;
+  filter: blur(40px);
+}
+
+.floating-circle {
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #4da3e6);
+}
+
+.floating-square {
+  background: linear-gradient(135deg, #3b82f6, #66b3f0);
+  transform: rotate(45deg);
+}
+
+.floating-triangle {
+  width: 0;
+  height: 0;
+  border-left: 50px solid transparent;
+  border-right: 50px solid transparent;
+  border-bottom: 86px solid #4da3e6;
+  background: none;
+}
+
+.circle-1 {
+  width: 300px;
+  height: 300px;
+  top: 10%;
+  left: 5%;
+  animation: float-1 20s ease-in-out infinite;
+}
+
+.circle-2 {
+  width: 200px;
+  height: 200px;
+  top: 60%;
+  right: 10%;
+  animation: float-2 25s ease-in-out infinite;
+}
+
+.circle-3 {
+  width: 250px;
+  height: 250px;
+  bottom: 10%;
+  left: 20%;
+  animation: float-3 30s ease-in-out infinite;
+}
+
+.square-1 {
+  width: 150px;
+  height: 150px;
+  top: 30%;
+  right: 20%;
+  animation: float-4 18s ease-in-out infinite;
+}
+
+.square-2 {
+  width: 100px;
+  height: 100px;
+  bottom: 30%;
+  right: 5%;
+  animation: float-5 22s ease-in-out infinite;
+}
+
+.triangle-1 {
+  top: 50%;
+  left: 10%;
+  animation: float-6 28s ease-in-out infinite;
+}
+
+@keyframes float-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(50px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.9);
+  }
+}
+
+@keyframes float-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-40px, 40px) scale(1.2);
+  }
+}
+
+@keyframes float-3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(30px, -30px) scale(0.8);
+  }
+  75% {
+    transform: translate(-50px, 50px) scale(1.1);
+  }
+}
+
+@keyframes float-4 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(45deg) scale(1);
+  }
+  50% {
+    transform: translate(60px, -60px) rotate(225deg) scale(1.3);
+  }
+}
+
+@keyframes float-5 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(45deg) scale(1);
+  }
+  33% {
+    transform: translate(-40px, 40px) rotate(135deg) scale(0.9);
+  }
+  66% {
+    transform: translate(40px, -40px) rotate(315deg) scale(1.1);
+  }
+}
+
+@keyframes float-6 {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(50px, -50px) rotate(90deg);
+  }
+  50% {
+    transform: translate(-30px, 30px) rotate(180deg);
+  }
+  75% {
+    transform: translate(30px, 30px) rotate(270deg);
+  }
+}

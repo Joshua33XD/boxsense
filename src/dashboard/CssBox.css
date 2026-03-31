@@ -1,0 +1,180 @@
+.box {
+  --box-width: 100px;
+  --box-height: 100px;
+  --box-depth: 140px;
+  width: var(--box-width);
+  height: var(--box-height);
+  position: relative;
+  transform-style: preserve-3d;
+  /* Add a slight perspective to the box itself for more depth */
+  transform: perspective(2000px);
+}
+
+.box-face {
+  position: absolute;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.2); /* Deeper faux ambient occlusion */
+  /* Stacked background for sheen + provided cardboard texture + subtle grain */
+  background-image:
+    linear-gradient(175deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 3%, transparent 20%),
+    url("../assets/cardboard-box-basecolor.png"),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+  background-size: cover, cover, 140px 140px;
+  background-position: center, center, center;
+  background-blend-mode: soft-light, normal, multiply;
+}
+
+.box-face-front,
+.box-face-back {
+  width: var(--box-width);
+  height: var(--box-height);
+}
+
+.box-face-right,
+.box-face-left {
+  width: var(--box-depth);
+  height: var(--box-height);
+  left: calc((var(--box-width) - var(--box-depth)) / 2);
+}
+
+.box-face-top,
+.box-face-bottom {
+  width: var(--box-width);
+  height: var(--box-depth);
+  top: calc((var(--box-height) - var(--box-depth)) / 2);
+}
+
+/* Base colors mimicking 3D lighting for depth */
+.box-face-front {
+  transform: translateZ(calc(var(--box-depth) / 2));
+  background-color: #c09458;
+}
+.box-face-back {
+  transform: rotateY(180deg) translateZ(calc(var(--box-depth) / 2));
+  background-color: #a87f46;
+}
+.box-face-right {
+  transform: rotateY(90deg) translateZ(calc(var(--box-width) / 2));
+  background-color: #b5894f;
+}
+.box-face-left {
+  transform: rotateY(-90deg) translateZ(calc(var(--box-width) / 2));
+  background-color: #b5894f;
+}
+.box-face-top {
+  transform: rotateX(90deg) translateZ(calc(var(--box-height) / 2));
+  background-color: #d2a76f;
+}
+.box-face-bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--box-height) / 2));
+  background-color: #956e3b;
+}
+
+/* Packing Tape */
+.box-tape {
+  position: absolute;
+  /* More realistic brown packing tape color and texture */
+  background-color: rgba(205, 133, 63, 0.55);
+  background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.02) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.02) 75%),
+    linear-gradient(45deg, rgba(0, 0, 0, 0.02) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.02) 75%);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+  backdrop-filter: contrast(1.2) brightness(1.1); /* Enhanced plastic look */
+}
+.box-tape-v {
+  width: 26px;
+  height: 100%;
+}
+
+/* Top and Bottom Flap seam */
+.box-flap-line {
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+.box-flap-line-h {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Shipping Label */
+.box-label {
+  position: absolute;
+  width: 42px;
+  height: 32px;
+  background: #f8f9fa;
+  top: 15px;
+  left: 12px;
+  border-radius: 2px;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 2; /* Sits slightly above tape */
+}
+.box-barcode {
+  width: 100%;
+  height: 10px;
+  background: repeating-linear-gradient(to right, #111, #111 2px, #fff 2px, #fff 3px, #111 3px, #111 4px, #fff 4px, #fff 6px, #111 6px, #111 7px);
+}
+.box-label-line {
+  width: 90%;
+  height: 3px;
+  background: #444;
+  border-radius: 1px;
+}
+.box-label-line.short {
+  width: 60%;
+}
+
+/* Fragile markings */
+.box-fragile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Red, semi-transparent, and slightly rotated for a stamped look */
+  color: rgba(200, 0, 0, 0.7);
+  border: 2px solid rgba(200, 0, 0, 0.65);
+  border-radius: 3px;
+  padding: 4px 6px 2px 6px;
+  transform: rotate(-2deg);
+}
+.box-fragile-arrows {
+  display: flex;
+  gap: 6px;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 900;
+}
+.box-fragile-text {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin-top: 2px;
+  font-family: 'Arial Black', 'Impact', sans-serif;
+}
+
+/* Projected shadow plane */
+.box-shadow-plane {
+  position: absolute;
+  width: var(--box-width);
+  height: calc(var(--box-depth) + 30px);
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.2) 0%, transparent 70%);
+  transform: rotateX(90deg) translateZ(calc((var(--box-height) / 2) * -1 - 4px));
+  filter: blur(4px);
+  z-index: -1;
+}

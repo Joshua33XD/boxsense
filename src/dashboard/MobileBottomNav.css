@@ -1,0 +1,109 @@
+.cargo-mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background: var(--cargo-surface);
+  border-top: 1px solid var(--cargo-border);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+  animation: mobileNavSlideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: 0.15s;
+}
+
+[data-theme='dark'] .cargo-mobile-nav {
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+}
+
+@keyframes mobileNavSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cargo-mobile-nav-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  gap: 2px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0.35rem 0.25rem 0.5rem;
+}
+
+.cargo-mobile-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 48px;
+  max-width: 72px;
+  margin: 0 auto;
+  padding: 0.35rem 0.2rem;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--cargo-text-subtle);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cargo-mobile-nav-btn:active {
+  transform: scale(0.94);
+}
+
+.cargo-mobile-nav-btn--active {
+  color: var(--cargo-accent);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.cargo-mobile-nav-icon {
+  width: 22px;
+  height: 22px;
+  opacity: 0.95;
+}
+
+.cargo-mobile-nav-btn--active .cargo-mobile-nav-icon {
+  opacity: 1;
+}
+
+.cargo-mobile-nav-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .cargo-mobile-nav {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cargo-mobile-nav {
+    animation: none;
+  }
+
+  .cargo-mobile-nav-btn:active {
+    transform: none;
+  }
+}

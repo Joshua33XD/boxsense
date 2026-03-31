@@ -1,0 +1,116 @@
+.cargo-orient-v2 {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cargo-orient-v2-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cargo-text-subtle);
+  margin-bottom: 1rem;
+  line-height: 1.35;
+}
+
+.cargo-orient-v2-body {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1rem;
+  flex: 1;
+  min-height: 200px;
+}
+
+.cargo-orient-v2-viz {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cargo-orient-v2-hint {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cargo-safe);
+  margin-bottom: 0.4rem;
+}
+
+.cargo-orient-v2-stage {
+  height: 188px;
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cargo-orient-full-image {
+  display: block;
+  width: min(100%, 320px);
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 14px 30px rgba(2, 8, 23, 0.24);
+}
+
+.cargo-orient-v2-readouts {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  border-left: 1px solid var(--cargo-border);
+  min-width: 6rem;
+}
+
+.cargo-orient-readout {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  border: 1px solid var(--cargo-border);
+  border-radius: 10px;
+  padding: 0.45rem 0.55rem;
+  background: var(--cargo-bg-elevated);
+}
+
+.cargo-orient-readout-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--cargo-text-subtle);
+}
+
+.cargo-orient-readout-val {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cargo-text);
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 520px) {
+  .cargo-orient-v2-body {
+    flex-direction: column;
+  }
+
+  .cargo-orient-v2-stage {
+    height: auto;
+  }
+
+  .cargo-orient-v2-readouts {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-left: none;
+    border-top: 1px solid var(--cargo-border);
+    padding: 0.75rem 0 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+}

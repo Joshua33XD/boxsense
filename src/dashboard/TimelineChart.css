@@ -1,0 +1,20 @@
+.cargo-timeline-card {
+  grid-column: 1 / -1;
+}
+
+.cargo-timeline-chart {
+  width: 100%;
+  height: 300px;
+}
+
+@media (max-width: 768px) {
+  .cargo-timeline-chart {
+    height: 260px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cargo-timeline-chart {
+    height: 220px;
+  }
+}

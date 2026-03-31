@@ -1,0 +1,130 @@
+.email-otp-card {
+  grid-column: 1 / -1;
+}
+
+.email-otp-card--verified {
+  padding: 0.85rem 1.25rem;
+}
+
+.email-otp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+}
+
+.email-otp-badge-ok {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.18);
+  color: var(--cargo-safe, #22c55e);
+}
+
+.email-otp-verified-email {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cargo-text);
+}
+
+.email-otp-text-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--cargo-accent);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem;
+  min-height: 44px;
+}
+
+.email-otp-warn {
+  font-size: 0.8rem;
+  color: var(--cargo-warn, #eab308);
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
+
+.email-otp-warn code {
+  font-size: 0.72rem;
+}
+
+.email-otp-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  max-width: 420px;
+}
+
+.email-otp-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cargo-text-subtle);
+}
+
+.email-otp-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--cargo-radius-sm, 10px);
+  border: 1px solid var(--cargo-border);
+  background: var(--cargo-bg, var(--cargo-bg-elevated));
+  color: var(--cargo-text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  min-height: 44px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.email-otp-input:focus {
+  outline: none;
+  border-color: var(--cargo-accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.email-otp-input-code {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+}
+
+.email-otp-msg {
+  font-size: 0.85rem;
+  color: var(--cargo-text-muted);
+  margin: 0 0 0.75rem;
+}
+
+.email-otp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.email-otp-btn.cargo-refresh-btn {
+  min-height: 44px;
+}
+
+.email-otp-secondary {
+  padding: 0.55rem 1rem;
+  min-height: 44px;
+  border-radius: var(--cargo-radius-sm, 10px);
+  border: 1px solid var(--cargo-border);
+  background: var(--cargo-card);
+  color: var(--cargo-text);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.email-otp-secondary:hover {
+  background: var(--cargo-bg-elevated);
+}

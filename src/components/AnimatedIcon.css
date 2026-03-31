@@ -1,0 +1,125 @@
+.animated-icon {
+  width: 24px;
+  height: 24px;
+  color: currentColor;
+}
+
+.sensor-icon {
+  animation: float 3s ease-in-out infinite;
+}
+
+.sensor-icon .pulse-ring {
+  animation: pulse-ring 2s ease-out infinite;
+  opacity: 0;
+}
+
+.sensor-icon .pulse-dot {
+  animation: pulse-dot 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.drop-icon {
+  animation: rotate 4s linear infinite;
+}
+
+.drop-icon .drop-path {
+  animation: dash 2s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  0%, 100% {
+    stroke-dasharray: 0, 100;
+    opacity: 1;
+  }
+  50% {
+    stroke-dasharray: 50, 100;
+    opacity: 0.5;
+  }
+}
+
+.refresh-icon {
+  transition: transform 0.3s ease;
+}
+
+.refresh-icon:hover {
+  animation: spin 0.6s ease;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.alert-icon {
+  animation: shake 0.5s ease-in-out infinite;
+}
+
+.alert-icon .alert-shake {
+  animation: shake 0.5s ease-in-out infinite;
+}
+
+.alert-icon .alert-blink {
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
