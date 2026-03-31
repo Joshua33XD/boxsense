@@ -37,7 +37,7 @@ export default function SafetyCard({ liveData, peakEvents, espConnected }) {
     statusClass = 'cargo-safety-badge--standby';
     msgClass = 'cargo-safety-msg--standby';
     detailMsg = 'Waiting for ESP32 connection.';
-  } else if (height != null && height > 1) {
+  } else if (height != null && height > 0.8) {
     badgeText = 'CAUTION';
     statusClass = 'cargo-safety-badge--caution';
     msgClass = 'cargo-safety-msg--caution';

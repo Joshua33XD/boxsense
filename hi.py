@@ -13,15 +13,9 @@ from flask_socketio import SocketIO, emit
 # ---------------- CONFIG ----------------
 ESP_ADDRESS = "9C:13:9E:CE:8F:B2"
 CHAR_UUID = "abcd1234-1234-1234-1234-1234567890ab"
-CSV_FILE = "drop_log.csv"
 MAX_RAW_DATA_ENTRIES = 1000
 MAX_PEAK_EVENTS = 1000
-
-# ---------------- CSV INIT ----------------
-if not os.path.exists(CSV_FILE):
-    with open(CSV_FILE, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["PC_Time", "Device_Time", "Intensity", "Peak_G", "Height_m", "LDR_percent", "FLEX_percent"])
+MAX_DROPS = 1000
 
 # ---------------- LIVE & PEAK DATA ----------------
 live_data = {"T": 0, "H": 0, "R": 0, "P": 0, "Y": 0, "G": 0, "L": 0, "F": 0}
@@ -30,9 +24,10 @@ peak_keys = ["TEMP", "HUM", "LDR", "FLEX", "G", "HGT"]
 peak_data = {key: 0 for key in peak_keys}
 peak_ts = {key: "" for key in peak_keys}
 
-# ---------------- PEAK EVENTS & RAW DATA (for React) ----------------
+# ---------------- PEAK EVENTS, RAW DATA & DROPS (for React) ----------------
 _peak_events = []
 _raw_data = deque(maxlen=MAX_RAW_DATA_ENTRIES)
+_drops = deque(maxlen=MAX_DROPS)
 _state_lock = threading.Lock()
 _esp_connected = False
 
@@ -105,6 +100,24 @@ def _add_peak_event(parameter: str, value: float):
         socketio.emit("peak_event", event)
     except Exception:
         pass
+
+
+def _latest_peak_snapshot():
+    """Capture the latest known peak values and timestamps for drop history."""
+    return {
+        "temperature": peak_data.get("TEMP", 0),
+        "temperature_time": peak_ts.get("TEMP", ""),
+        "humidity": peak_data.get("HUM", 0),
+        "humidity_time": peak_ts.get("HUM", ""),
+        "ldr": peak_data.get("LDR", 0),
+        "ldr_time": peak_ts.get("LDR", ""),
+        "flex": peak_data.get("FLEX", 0),
+        "flex_time": peak_ts.get("FLEX", ""),
+        "peak_g": peak_data.get("G", 0),
+        "peak_g_time": peak_ts.get("G", ""),
+        "height": peak_data.get("HGT", 0),
+        "height_time": peak_ts.get("HGT", ""),
+    }
 
 
 def _add_raw_data(message: str):
@@ -201,17 +214,32 @@ def notification_handler(sender, data):
                     key, value = item.split("=", 1)
                     data_dict[key] = value
             pc_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with open(CSV_FILE, mode='a', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow([
-                    pc_time,
-                    data_dict.get("TIME", ""),
-                    data_dict.get("INT", ""),
-                    data_dict.get("PG", ""),
-                    data_dict.get("H", ""),
-                    data_dict.get("L", ""),
-                    data_dict.get("F", "")
-                ])
+            peak_snapshot = _latest_peak_snapshot()
+            drop_entry = {
+                "pc_time": pc_time,
+                "device_time": data_dict.get("TIME", ""),
+                "date": pc_time.split(" ")[0],
+                "time": pc_time.split(" ")[1] if " " in pc_time else "",
+                "intensity": data_dict.get("INT", ""),
+                "peak_g": peak_snapshot["peak_g"] or data_dict.get("PG", ""),
+                "peak_g_time": peak_snapshot["peak_g_time"],
+                "height": peak_snapshot["height"] or data_dict.get("H", ""),
+                "height_time": peak_snapshot["height_time"],
+                "temperature": peak_snapshot["temperature"],
+                "temperature_time": peak_snapshot["temperature_time"],
+                "humidity": peak_snapshot["humidity"],
+                "humidity_time": peak_snapshot["humidity_time"],
+                "ldr": peak_snapshot["ldr"] or data_dict.get("L", ""),
+                "ldr_time": peak_snapshot["ldr_time"],
+                "flex": peak_snapshot["flex"] or data_dict.get("F", ""),
+                "flex_time": peak_snapshot["flex_time"],
+            }
+            with _state_lock:
+                _drops.append(drop_entry)
+            try:
+                socketio.emit("drop_event", drop_entry)
+            except Exception:
+                pass
         except Exception:
             print("DROP RAW:", message)
 
@@ -293,27 +321,10 @@ def get_raw_data():
 
 @app.get("/api/drops")
 def get_drops():
-    """Drop events from CSV."""
-    if not os.path.exists(CSV_FILE):
-        return jsonify([])
-    try:
-        with open(CSV_FILE, "r", newline="", encoding="utf-8") as f:
-            rows = list(csv.DictReader(f))
-        out = []
-        for r in rows:
-            out.append({
-                "pc_time": r.get("PC_Time", ""),
-                "device_time": r.get("Device_Time", ""),
-                "intensity": r.get("Intensity", ""),
-                "peak_g": r.get("Peak_G", ""),
-                "height": r.get("Height_m", ""),
-                "ldr": r.get("LDR_percent", ""),
-                "flex": r.get("FLEX_percent", ""),
-            })
-        return jsonify(list(reversed(out)))
-    except Exception as e:
-        print("Error reading drops:", e)
-        return jsonify([])
+    """Drop events for React, kept in memory (no CSV)."""
+    with _state_lock:
+        # Most recent first, same field names the frontend already expects
+        return jsonify(list(reversed(list(_drops))))
 
 
 @app.get("/api/otp/config")
@@ -408,6 +419,7 @@ def on_connect():
     with _state_lock:
         peak_events = list(reversed(_peak_events[-100:]))
         raw_entries = list(_raw_data)[-100:]
+        drops = list(reversed(list(_drops)[-100:]))
         connected = _esp_connected
     emit("esp_status", {"connected": connected})
     emit("live_data", {
@@ -423,6 +435,8 @@ def on_connect():
     })
     if peak_events:
         emit("peak_events_batch", peak_events)
+    if drops:
+        emit("drops_batch", drops)
     if raw_entries:
         emit("raw_data_batch", raw_entries)
 

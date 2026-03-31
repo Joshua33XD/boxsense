@@ -20,6 +20,27 @@
   }
 }
 
+@keyframes cargoRadarSweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cargoRadarPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.42;
+  }
+}
+
 .cargo-topbar {
   background: color-mix(in srgb, var(--cargo-surface) 84%, transparent);
   border-bottom: 1px solid var(--cargo-border);
@@ -27,6 +48,7 @@
   top: 0;
   z-index: 20;
   backdrop-filter: blur(20px);
+  overflow: hidden;
 }
 
 .cargo-topbar::after {
@@ -36,6 +58,18 @@
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.45), transparent);
   opacity: 0.5;
+}
+
+.cargo-topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 20%, rgba(56, 189, 248, 0.16), transparent 22%),
+    radial-gradient(circle at 88% 15%, rgba(59, 130, 246, 0.18), transparent 24%),
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .cargo-topbar-inner {
@@ -178,6 +212,68 @@
   gap: 0.5rem;
 }
 
+.cargo-topbar-radar {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  margin-right: 0.2rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgba(56, 189, 248, 0.16), rgba(15, 23, 42, 0.06) 42%, transparent 64%),
+    rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.08);
+}
+
+.cargo-topbar-radar-ring,
+.cargo-topbar-radar-core,
+.cargo-topbar-radar-sweep {
+  position: absolute;
+  inset: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cargo-topbar-radar-ring {
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  animation: cargoRadarPulse 3.4s ease-in-out infinite;
+}
+
+.cargo-topbar-radar-ring--one {
+  width: 20px;
+  height: 20px;
+}
+
+.cargo-topbar-radar-ring--two {
+  width: 34px;
+  height: 34px;
+  animation-delay: 0.5s;
+}
+
+.cargo-topbar-radar-ring--three {
+  width: 46px;
+  height: 46px;
+  animation-delay: 1s;
+}
+
+.cargo-topbar-radar-core {
+  width: 8px;
+  height: 8px;
+  background: #7dd3fc;
+  box-shadow: 0 0 12px rgba(125, 211, 252, 0.8);
+}
+
+.cargo-topbar-radar-sweep {
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  transform: none;
+  background: conic-gradient(from 180deg, transparent 0deg, rgba(56, 189, 248, 0.45) 58deg, transparent 95deg);
+  animation: cargoRadarSweep 4.8s linear infinite;
+  opacity: 0.72;
+}
+
 .cargo-icon-btn {
   min-width: 44px;
   min-height: 44px;
@@ -247,6 +343,10 @@
     border-color: rgba(59, 130, 246, 0.14);
     background: rgba(59, 130, 246, 0.08);
   }
+
+  .cargo-topbar-radar:hover {
+    transform: scale(1.05);
+  }
 }
 
 @media (max-width: 900px) {
@@ -258,6 +358,10 @@
     order: 3;
   }
 
+  .cargo-topbar-radar {
+    display: none;
+  }
+
   .cargo-topbar-h1 {
     font-size: 0.9rem;
   }
@@ -266,7 +370,9 @@
 @media (prefers-reduced-motion: reduce) {
   .cargo-topbar-inner,
   .cargo-pill--ok .cargo-pill-dot,
-  .cargo-refresh-btn--loading {
+  .cargo-refresh-btn--loading,
+  .cargo-topbar-radar-ring,
+  .cargo-topbar-radar-sweep {
     animation: none;
   }
 

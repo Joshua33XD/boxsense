@@ -10,7 +10,7 @@ import SafetyCard from './dashboard/SafetyCard';
 import OrientationCard from './dashboard/OrientationCard';
 import EnvironmentCard from './dashboard/EnvironmentCard';
 import MotionChart from './dashboard/MotionChart';
-import TimelineChart from './dashboard/TimelineChart';
+import TimelineChart from './dashboard/TimelineChartV2';
 import PeaksStrip from './dashboard/PeaksStrip';
 import RawPanel from './dashboard/RawPanel';
 import './dashboard/Dashboard.css';
@@ -192,6 +192,18 @@ function App() {
       }
     });
 
+    socket.on('drop_event', (entry) => {
+      if (entry && typeof entry === 'object') {
+        setDrops((prev) => [entry, ...prev].slice(0, 1000));
+      }
+    });
+
+    socket.on('drops_batch', (entries) => {
+      if (entries && Array.isArray(entries)) {
+        setDrops(entries);
+      }
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
@@ -366,7 +378,7 @@ function App() {
           </div>
 
           <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-            <TimelineChart drops={drops} />
+            <TimelineChart drops={drops} peakEvents={peakEvents} />
           </div>
 
           <div className="dashboard-grid" style={{ marginTop: '1rem' }}>

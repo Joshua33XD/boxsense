@@ -66,6 +66,13 @@ export default function TopBar({
         </div>
 
         <div className="cargo-topbar-actions">
+          <div className="cargo-topbar-radar" aria-hidden>
+            <span className="cargo-topbar-radar-ring cargo-topbar-radar-ring--one" />
+            <span className="cargo-topbar-radar-ring cargo-topbar-radar-ring--two" />
+            <span className="cargo-topbar-radar-ring cargo-topbar-radar-ring--three" />
+            <span className="cargo-topbar-radar-sweep" />
+            <span className="cargo-topbar-radar-core" />
+          </div>
           <button
             type="button"
             className="cargo-icon-btn"

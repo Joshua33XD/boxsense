@@ -22,6 +22,8 @@ const CHART_COLORS = {
   impact: '#ef4444',
 };
 
+const IMPACT_THRESHOLD_G = 2.8;
+
 export default function MotionChart({ series }) {
   const data = useMemo(() => {
     if (!series || series.length === 0) return [];
@@ -56,25 +58,43 @@ export default function MotionChart({ series }) {
   return (
     <div className="dashboard-card dashboard-grid-middle cargo-motion-card" id="dash-live">
       <div className="dashboard-card-header-row">
-        <div>
-          <div className="dashboard-card-title">Motion and impact</div>
-          <div className="cargo-motion-subrow">
-            <span className="cargo-chart-sub">Last ~60 seconds</span>
-            <span className="cargo-motion-live-pill">Live stream</span>
+        <div className="cargo-motion-header-main">
+          <div>
+            <div className="dashboard-card-title">Motion and impact</div>
+            <div className="cargo-motion-subrow">
+              <span className="cargo-chart-sub">Last ~60 seconds</span>
+              <span className="cargo-motion-live-pill">Live stream</span>
+            </div>
           </div>
-        </div>
-        <div className="cargo-motion-stats" aria-label="Motion summary">
-          <div className="cargo-motion-stat">
-            <span className="cargo-motion-stat-label">Current</span>
-            <span className="cargo-motion-stat-value">{latest?.g?.toFixed(2)}g</span>
-          </div>
-          <div className="cargo-motion-stat">
-            <span className="cargo-motion-stat-label">Peak</span>
-            <span className="cargo-motion-stat-value">{peak.toFixed(2)}g</span>
-          </div>
-          <div className={`cargo-motion-stat ${latestImpact ? 'cargo-motion-stat--impact' : ''}`}>
-            <span className="cargo-motion-stat-label">Impacts</span>
-            <span className="cargo-motion-stat-value">{impacts.length}</span>
+          <div className="cargo-motion-stats-box" aria-label="Motion summary">
+            <div className="cargo-motion-stats-row">
+              <div className="cargo-motion-stat">
+                <span className="cargo-motion-stat-label">Current</span>
+                <span className="cargo-motion-stat-value">
+                  {latest?.g?.toFixed(2)}
+                  <small>g</small>
+                </span>
+              </div>
+              <div className="cargo-motion-stat">
+                <span className="cargo-motion-stat-label">Peak</span>
+                <span className="cargo-motion-stat-value">
+                  {peak.toFixed(2)}
+                  <small>g</small>
+                </span>
+              </div>
+              <div className={`cargo-motion-stat ${latestImpact ? 'cargo-motion-stat--impact' : ''}`}>
+                <span className="cargo-motion-stat-label">Impacts</span>
+                <span className="cargo-motion-stat-value">{impacts.length}</span>
+              </div>
+              <div className="cargo-motion-stat cargo-motion-stat--threshold" aria-label="Impact threshold">
+                <span className="cargo-motion-stat-label">Threshold</span>
+                <span className="cargo-motion-stat-value">
+                  {IMPACT_THRESHOLD_G.toFixed(1)}
+                  <small>g</small>
+                  <span className="cargo-threshold-gif" aria-hidden />
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -89,13 +109,13 @@ export default function MotionChart({ series }) {
               </linearGradient>
             </defs>
             <ReferenceArea
-              y1={2.8}
-              y2={Math.max(peak + 0.4, 3.4)}
+              y1={IMPACT_THRESHOLD_G}
+              y2={Math.max(peak + 0.4, IMPACT_THRESHOLD_G + 0.6)}
               fill="rgba(239, 68, 68, 0.08)"
               ifOverflow="extendDomain"
             />
             <ReferenceLine
-              y={2.8}
+              y={IMPACT_THRESHOLD_G}
               stroke="rgba(248, 113, 113, 0.55)"
               strokeDasharray="4 4"
               ifOverflow="extendDomain"
