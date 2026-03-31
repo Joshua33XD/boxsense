@@ -17,7 +17,6 @@ import RawPanel from './dashboard/RawPanel';
 import './dashboard/Dashboard.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const OTP_STORAGE_KEY = 'boxesense_email_otp';
 const DEBUG_ENDPOINT =
   'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
 const DEBUG_SESSION_ID = '601a3e';
@@ -40,17 +39,6 @@ function debugLog(hypothesisId, location, message, data) {
       timestamp: Date.now(),
     }),
   }).catch(() => {});
-}
-
-function hasVerifiedOtpSession() {
-  try {
-    const raw = sessionStorage.getItem(OTP_STORAGE_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    return !!(parsed?.orderId || parsed?.email);
-  } catch {
-    return false;
-  }
 }
 
 const DEMO_LIVE_DATA = {
@@ -121,7 +109,7 @@ function App() {
   );
   const [motionSeries, setMotionSeries] = useState([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(() => hasVerifiedOtpSession());
+  const [otpVerified, setOtpVerified] = useState(false);
   const motionBufRef = useRef([]);
   const socketRef = useRef(null);
   
@@ -336,6 +324,24 @@ function App() {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
   }, []);
 
+  if (!otpVerified) {
+    return (
+      <div
+        className="dashboard-root"
+        style={{
+          minHeight: '100vh',
+          display: 'grid',
+          placeItems: 'center',
+          padding: '1rem',
+        }}
+      >
+        <div style={{ width: '100%', maxWidth: '560px' }}>
+          <EmailOtpCard onVerifiedChange={setOtpVerified} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-root">
       <Sidebar
@@ -357,40 +363,31 @@ function App() {
             <div className="cargo-loading">Loading peak values...</div>
           ) : null}
 
-          {!otpVerified ? (
-            <div id="dash-overview" className="dashboard-grid">
-              <EmailOtpCard onVerifiedChange={setOtpVerified} />
-            </div>
-          ) : (
-            <>
-              <div id="dash-overview" className="dashboard-grid">
-                <SafetyCard
-                  liveData={liveData}
-                  peakEvents={peakEvents}
-                  espConnected={espConnected || isDemoMode}
-                />
-                <OrientationCard liveData={liveData} />
-                <EnvironmentCard liveData={liveData} />
-                <EmailOtpCard onVerifiedChange={setOtpVerified} />
-              </div>
+          <div id="dash-overview" className="dashboard-grid">
+            <SafetyCard
+              liveData={liveData}
+              peakEvents={peakEvents}
+              espConnected={espConnected || isDemoMode}
+            />
+            <OrientationCard liveData={liveData} />
+            <EnvironmentCard liveData={liveData} />
+          </div>
 
-              <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-                <PeaksStrip peakEvents={peakEvents} />
-              </div>
+          <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
+            <PeaksStrip peakEvents={peakEvents} />
+          </div>
 
-              <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-                <MotionChart series={motionSeries} />
-              </div>
+          <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
+            <MotionChart series={motionSeries} />
+          </div>
 
-              <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-                <TimelineChart drops={drops} />
-              </div>
+          <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
+            <TimelineChart drops={drops} />
+          </div>
 
-              <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-                <RawPanel rawData={rawData} />
-              </div>
-            </>
-          )}
+          <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
+            <RawPanel rawData={rawData} />
+          </div>
         </main>
         <MobileBottomNav activeId={activeNav} onNavigate={onNavigate} />
       </div>

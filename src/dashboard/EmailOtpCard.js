@@ -4,16 +4,6 @@ import './EmailOtpCard.css';
 const STORAGE_KEY = 'boxesense_email_otp';
 const FIXED_OTP = '55446';
 
-function readStored() {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
 function writeStored(email) {
   sessionStorage.setItem(
     STORAGE_KEY,
@@ -30,14 +20,9 @@ export default function EmailOtpCard({ onVerifiedChange = () => {} }) {
   const [phase, setPhase] = useState('idle');
   const [message, setMessage] = useState('');
   const [verifiedEmail, setVerifiedEmail] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = readStored();
-    const storedOrderId = stored?.orderId || stored?.email || null;
-    setVerifiedEmail(storedOrderId);
-    onVerifiedChange(!!storedOrderId);
-    setLoading(false);
+    onVerifiedChange(false);
   }, [onVerifiedChange]);
 
   const onSend = useCallback(() => {
@@ -69,8 +54,6 @@ export default function EmailOtpCard({ onVerifiedChange = () => {} }) {
     setCode('');
     setMessage('');
   }, [onVerifiedChange]);
-
-  if (loading) return null;
 
   if (verifiedEmail) {
     return (
