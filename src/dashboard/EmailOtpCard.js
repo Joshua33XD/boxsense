@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './EmailOtpCard.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || '';
@@ -56,6 +56,36 @@ export default function EmailOtpCard() {
   const [busy, setBusy] = useState(false);
   const [verifiedEmail, setVerifiedEmail] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const didInitialRenderLogRef = useRef(false);
+  if (!didInitialRenderLogRef.current) {
+    didInitialRenderLogRef.current = true;
+    // #region agent log
+    // Log in render so we can confirm whether this component is actually mounted in Vercel build.
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const stored = (() => {
+        try {
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      })();
+      debugLog('E1', 'src/dashboard/EmailOtpCard.js:render', 'EmailOtpCard initial render', {
+        hasRaw: !!raw,
+        hasStoredEmail: !!stored?.email,
+        hasVerifiedAt: !!stored?.verifiedAt,
+      });
+    } catch {
+      debugLog('E1', 'src/dashboard/EmailOtpCard.js:render', 'EmailOtpCard initial render', {
+        hasRaw: false,
+        hasStoredEmail: false,
+        hasVerifiedAt: false,
+      });
+    }
+    // #endregion
+  }
+
   useEffect(() => {
     const raw = (() => {
       try {

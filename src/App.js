@@ -113,6 +113,34 @@ function App() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const motionBufRef = useRef([]);
   const socketRef = useRef(null);
+  const didOverlayVisibleLogRef = useRef(false);
+  const didOverlayHiddenLogRef = useRef(false);
+
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    // Log at first client render so we can correlate UI disappearance with state.
+    if (!didOverlayVisibleLogRef.current) {
+      didOverlayVisibleLogRef.current = true;
+      debugLog('H16', 'src/App.js:render', 'OTP overlay initial render', {
+        host: window.location?.host,
+        protocol: window.location?.protocol,
+        pathname: window.location?.pathname,
+        API_BASE_URL,
+        isOtpVerified,
+      });
+    }
+    if (isOtpVerified && !didOverlayHiddenLogRef.current) {
+      didOverlayHiddenLogRef.current = true;
+      debugLog('H17', 'src/App.js:render', 'OTP overlay hidden (isOtpVerified=true)', {
+        host: window.location?.host,
+        protocol: window.location?.protocol,
+        pathname: window.location?.pathname,
+        API_BASE_URL,
+        isOtpVerified,
+      });
+    }
+  }
+  // #endregion
 
   useEffect(() => {
     // #region agent log
@@ -158,6 +186,9 @@ function App() {
 
   const fetchData = useCallback(async () => {
     try {
+      debugLog('H14', 'src/App.js:fetchData', 'fetchData start', {
+        API_BASE_URL,
+      });
       const [liveResponse, peakEventsResponse, rawDataResponse, statusResponse, dropsResponse] =
         await Promise.all([
           fetch(`${API_BASE_URL}/api/live`),
@@ -237,6 +268,8 @@ function App() {
       debugLog('H10', 'src/App.js:socket', 'Socket connect_error', {
         errName: err?.name,
         errMessage: err?.message,
+        API_BASE_URL,
+        isOtpVerified,
       });
     });
     // #endregion
