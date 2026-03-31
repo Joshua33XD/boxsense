@@ -9,7 +9,6 @@ import TopBar from './dashboard/TopBar';
 import SafetyCard from './dashboard/SafetyCard';
 import OrientationCard from './dashboard/OrientationCard';
 import EnvironmentCard from './dashboard/EnvironmentCard';
-import EmailOtpCard from './dashboard/EmailOtpCard';
 import MotionChart from './dashboard/MotionChart';
 import TimelineChart from './dashboard/TimelineChart';
 import PeaksStrip from './dashboard/PeaksStrip';
@@ -21,6 +20,7 @@ const DEBUG_ENDPOINT =
   'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
 const DEBUG_SESSION_ID = '601a3e';
 const DEBUG_RUN_ID = 'run_before';
+const SITE_ENTRY_OTP = '55446';
 
 function debugLog(hypothesisId, location, message, data) {
   fetch(DEBUG_ENDPOINT, {
@@ -110,6 +110,9 @@ function App() {
   const [motionSeries, setMotionSeries] = useState([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [orderIdInput, setOrderIdInput] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [otpError, setOtpError] = useState('');
   const motionBufRef = useRef([]);
   const socketRef = useRef(null);
   
@@ -324,6 +327,21 @@ function App() {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
   }, []);
 
+  const onEntryVerify = useCallback(() => {
+    const orderId = orderIdInput.trim();
+    const otp = otpInput.trim();
+    if (!orderId) {
+      setOtpError('Enter your order ID.');
+      return;
+    }
+    if (otp !== SITE_ENTRY_OTP) {
+      setOtpError('Invalid OTP.');
+      return;
+    }
+    setOtpError('');
+    setOtpVerified(true);
+  }, [orderIdInput, otpInput]);
+
   if (!otpVerified) {
     return (
       <div
@@ -335,8 +353,67 @@ function App() {
           padding: '1rem',
         }}
       >
-        <div style={{ width: '100%', maxWidth: '560px' }}>
-          <EmailOtpCard onVerifiedChange={setOtpVerified} />
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '560px',
+            padding: '20px',
+            borderRadius: '16px',
+            background: 'rgba(17, 20, 25, 0.9)',
+            border: '1px solid rgba(255,255,255,0.12)',
+          }}
+        >
+          <h2 style={{ marginTop: 0, marginBottom: '12px' }}>Order Verification</h2>
+          <p style={{ marginTop: 0, marginBottom: '16px', opacity: 0.85 }}>
+            Enter your order ID and OTP to continue.
+          </p>
+          <input
+            type="text"
+            placeholder="Order ID"
+            value={orderIdInput}
+            onChange={(e) => setOrderIdInput(e.target.value)}
+            style={{
+              width: '100%',
+              marginBottom: '10px',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              border: '1px solid rgba(255,255,255,0.18)',
+              background: 'rgba(0,0,0,0.2)',
+              color: 'inherit',
+            }}
+          />
+          <input
+            type="password"
+            placeholder="OTP"
+            value={otpInput}
+            onChange={(e) => setOtpInput(e.target.value)}
+            style={{
+              width: '100%',
+              marginBottom: '10px',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              border: '1px solid rgba(255,255,255,0.18)',
+              background: 'rgba(0,0,0,0.2)',
+              color: 'inherit',
+            }}
+          />
+          {otpError ? (
+            <div style={{ color: '#ff7a7a', marginBottom: '10px' }}>{otpError}</div>
+          ) : null}
+          <button
+            type="button"
+            onClick={onEntryVerify}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '10px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 700,
+            }}
+          >
+            Enter Site
+          </button>
         </div>
       </div>
     );

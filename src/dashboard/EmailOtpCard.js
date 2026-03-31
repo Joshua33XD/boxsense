@@ -44,7 +44,7 @@ export default function EmailOtpCard({ onVerifiedChange = () => {} }) {
     }
 
     setMessage('Invalid OTP. Please try again.');
-  }, [orderId, code]);
+  }, [orderId, code, onVerifiedChange]);
 
   const onLogout = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
