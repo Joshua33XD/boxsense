@@ -16,6 +16,7 @@ import RawPanel from './dashboard/RawPanel';
 import './dashboard/Dashboard.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const OTP_CODE = '55446';
 const DEBUG_ENDPOINT =
   'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
 const DEBUG_SESSION_ID = '601a3e';
@@ -374,7 +375,7 @@ function App() {
   const handleOtpSubmit = useCallback(
     (event) => {
       event.preventDefault();
-      const isMatch = otpInput.trim() === '55446';
+      const isMatch = otpInput.trim() === OTP_CODE;
 
       // #region agent log
       debugLog('H2', 'src/App.js:handleOtpSubmit', 'OTP submit attempt', {
@@ -399,23 +400,34 @@ function App() {
         <div className="otp-overlay" role="dialog" aria-modal="true" aria-labelledby="otp-title">
           <form className="otp-modal" onSubmit={handleOtpSubmit}>
             <h2 id="otp-title" className="otp-title">
-              Enter OTP
+              OTP
             </h2>
-            <p className="otp-subtitle">Enter OTP to access this page.</p>
             <input
+              aria-label="OTP"
               className="otp-input"
               type="password"
               inputMode="numeric"
               autoFocus
               value={otpInput}
               onChange={(e) => {
-                setOtpInput(e.target.value);
+                const next = e.target.value;
+                setOtpInput(next);
                 if (otpError) setOtpError('');
+
+                // Auto-verify once the user has entered the full code.
+                const trimmed = next.trim();
+                const isMatch = trimmed === OTP_CODE;
+                if (trimmed.length === OTP_CODE.length && isMatch) {
+                  setIsOtpVerified(true);
+                  setOtpError('');
+                } else if (trimmed.length === OTP_CODE.length && !isMatch) {
+                  setOtpError('Invalid OTP. Please try again.');
+                }
               }}
-              placeholder="Enter OTP"
+              placeholder="OTP"
             />
             {otpError ? <p className="otp-error">{otpError}</p> : null}
-            <button type="submit" className="otp-btn">
+            <button type="submit" className="otp-btn" style={{ display: 'none' }}>
               Enter
             </button>
           </form>
