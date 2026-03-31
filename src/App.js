@@ -115,6 +115,15 @@ function App() {
   const socketRef = useRef(null);
 
   useEffect(() => {
+    // #region agent log
+    debugLog('H7', 'src/App.js:mount', 'App mounted', {
+      API_BASE_URL,
+      isOtpVerifiedInitial: isOtpVerified,
+    });
+    // #endregion
+  }, []);
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('cargo-theme', theme);
   }, [theme]);
@@ -131,6 +140,9 @@ function App() {
   }, [isOtpVerified]);
 
   const loadDemoData = useCallback(() => {
+    // #region agent log
+    debugLog('H8', 'src/App.js:loadDemoData', 'Loading demo data', {});
+    // #endregion
     const demoMotion = buildDemoMotionSeries();
     motionBufRef.current = demoMotion;
     setLiveData(DEMO_LIVE_DATA);
@@ -201,6 +213,12 @@ function App() {
       setLastUpdate(new Date());
       setLoading(false);
     } catch (error) {
+      // #region agent log
+      debugLog('H9', 'src/App.js:fetchData', 'Dashboard fetch failed, fallback demo', {
+        errorName: error?.name,
+        errorMsg: error?.message,
+      });
+      // #endregion
       console.error('Error fetching data:', error);
       loadDemoData();
     }
@@ -213,6 +231,15 @@ function App() {
   useEffect(() => {
     const socket = io(API_BASE_URL, { transports: ['websocket', 'polling'] });
     socketRef.current = socket;
+
+    // #region agent log
+    socket.on('connect_error', (err) => {
+      debugLog('H10', 'src/App.js:socket', 'Socket connect_error', {
+        errName: err?.name,
+        errMessage: err?.message,
+      });
+    });
+    // #endregion
 
     socket.on('esp_status', (payload) => {
       if (payload && typeof payload.connected === 'boolean') {
