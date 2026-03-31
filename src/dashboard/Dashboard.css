@@ -19,23 +19,6 @@
   }
 }
 
-@keyframes dashSheenSweep {
-  0% {
-    transform: translateX(-130%);
-    opacity: 0;
-  }
-  18% {
-    opacity: 0.22;
-  }
-  55% {
-    opacity: 0.07;
-  }
-  100% {
-    transform: translateX(130%);
-    opacity: 0;
-  }
-}
-
 @keyframes dashCardAura {
   0%,
   100% {
@@ -102,12 +85,7 @@
   content: '';
   position: fixed;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), transparent 85%);
-  opacity: 0.12;
+  background: none;
   pointer-events: none;
   z-index: -1;
 }
@@ -162,20 +140,8 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    115deg,
-    rgba(255, 255, 255, 0) 0px,
-    rgba(255, 255, 255, 0) 10px,
-    rgba(255, 255, 255, 0.16) 14px,
-    rgba(56, 189, 248, 0.12) 18px,
-    rgba(248, 113, 113, 0.08) 24px,
-    rgba(255, 255, 255, 0) 30px
-  );
-  background-size: 240px 100%;
-  transform: translateX(-130%);
-  opacity: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%);
   pointer-events: none;
-  animation: dashSheenSweep 4.6s linear infinite;
 }
 
 .dashboard-card::after {
@@ -203,11 +169,6 @@
 
 .dashboard-card::marker {
   color: inherit;
-}
-
-.dashboard-card:has(.cargo-chart-sub)::after,
-.dashboard-card:has(.dashboard-card-title)::before {
-  will-change: transform, opacity;
 }
 
 .dashboard-grid .dashboard-card:nth-child(1) {

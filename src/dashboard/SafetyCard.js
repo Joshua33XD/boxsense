@@ -54,10 +54,14 @@ export default function SafetyCard({ liveData, peakEvents, espConnected }) {
 
       <div className="cargo-safety-v2-detail">
         <div className="cargo-safety-v2-detail-left">
-          <IconGear className="cargo-safety-gear" aria-hidden />
+          <span className="cargo-safety-icon-shell cargo-safety-icon-shell--gear" aria-hidden>
+            <IconGear className="cargo-safety-gear" />
+          </span>
           <span className={`cargo-safety-msg ${msgClass}`}>{detailMsg}</span>
         </div>
-        <IconIsoPackage className="cargo-safety-package" aria-hidden />
+        <span className="cargo-safety-icon-shell cargo-safety-icon-shell--package" aria-hidden>
+          <IconIsoPackage className="cargo-safety-package" />
+        </span>
       </div>
 
       <div className="cargo-safety-v2-meta" aria-live="polite">

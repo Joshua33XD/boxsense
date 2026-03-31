@@ -47,7 +47,76 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  isolation: isolate;
 }
+
+@keyframes cargoOrientSweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cargoOrientPulse {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.34;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+
+.cargo-orient-scan {
+  position: absolute;
+  inset: 18px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cargo-orient-scan-ring,
+.cargo-orient-scan-sweep {
+  position: absolute;
+  inset: 50%;
+  border-radius: 50%;
+}
+
+.cargo-orient-scan-ring {
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  transform: translate(-50%, -50%);
+  animation: cargoOrientPulse 3.4s ease-in-out infinite;
+}
+
+.cargo-orient-scan-ring--one {
+  width: 72px;
+  height: 72px;
+}
+
+.cargo-orient-scan-ring--two {
+  width: 112px;
+  height: 112px;
+  animation-delay: 0.4s;
+}
+
+.cargo-orient-scan-ring--three {
+  width: 152px;
+  height: 152px;
+  animation-delay: 0.8s;
+}
+
+.cargo-orient-scan-sweep {
+  inset: 0;
+  transform: none;
+  background: conic-gradient(from 180deg, transparent 0deg, rgba(56, 189, 248, 0.24) 52deg, transparent 95deg);
+  animation: cargoOrientSweep 6s linear infinite;
+  opacity: 0.65;
+}
+
 
 .cargo-orient-full-image {
   display: block;
@@ -112,5 +181,12 @@
     padding: 0.75rem 0 0;
     width: 100%;
     justify-content: space-between;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cargo-orient-scan-ring,
+  .cargo-orient-scan-sweep {
+    animation: none;
   }
 }

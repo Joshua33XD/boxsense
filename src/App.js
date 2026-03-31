@@ -356,7 +356,14 @@ function App() {
         />
         <main className="dashboard-content dashboard-content--scroll">
           {loading && peakEvents.length === 0 && rawData.length === 0 ? (
-            <div className="cargo-loading">Loading peak values...</div>
+            <div className="cargo-loading" aria-live="polite">
+              <span className="cargo-loading-box" aria-hidden>
+                <span className="cargo-loading-panel cargo-loading-panel--top" />
+                <span className="cargo-loading-panel cargo-loading-panel--left" />
+                <span className="cargo-loading-panel cargo-loading-panel--right" />
+              </span>
+              <span className="cargo-loading-text">Loading peak values...</span>
+            </div>
           ) : null}
 
           <div id="dash-overview" className="dashboard-grid">

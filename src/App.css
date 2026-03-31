@@ -10,10 +10,94 @@
   }
 }
 
+@keyframes cargoBoxLid {
+  0%,
+  100% {
+    transform: translate(-50%, -100%) rotateX(0deg);
+  }
+  50% {
+    transform: translate(-50%, -100%) rotateX(72deg);
+  }
+}
+
+@keyframes cargoBoxSideLeft {
+  0%,
+  100% {
+    transform: skewY(16deg) translateX(0);
+    opacity: 0.78;
+  }
+  50% {
+    transform: skewY(16deg) translateX(-3px);
+    opacity: 1;
+  }
+}
+
+@keyframes cargoBoxSideRight {
+  0%,
+  100% {
+    transform: skewY(-16deg) translateX(0);
+    opacity: 0.82;
+  }
+  50% {
+    transform: skewY(-16deg) translateX(3px);
+    opacity: 1;
+  }
+}
+
 .cargo-loading {
   padding: 1rem 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
   color: var(--cargo-text-muted);
   font-size: 0.9rem;
+}
+
+.cargo-loading-box {
+  position: relative;
+  width: 42px;
+  height: 34px;
+  display: inline-block;
+  perspective: 300px;
+}
+
+.cargo-loading-panel {
+  position: absolute;
+  background: linear-gradient(135deg, #fbbf24, #f97316);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.18);
+}
+
+.cargo-loading-panel--top {
+  left: 50%;
+  top: 0;
+  width: 26px;
+  height: 12px;
+  transform-origin: bottom center;
+  transform: translate(-50%, -100%);
+  border-radius: 6px 6px 2px 2px;
+  animation: cargoBoxLid 1.3s ease-in-out infinite;
+}
+
+.cargo-loading-panel--left {
+  left: 2px;
+  bottom: 0;
+  width: 18px;
+  height: 22px;
+  border-radius: 6px 2px 6px 6px;
+  animation: cargoBoxSideLeft 1.3s ease-in-out infinite;
+}
+
+.cargo-loading-panel--right {
+  right: 2px;
+  bottom: 0;
+  width: 18px;
+  height: 22px;
+  border-radius: 2px 6px 6px 6px;
+  animation: cargoBoxSideRight 1.3s ease-in-out infinite;
+}
+
+.cargo-loading-text {
   animation: appPulseText 1.4s ease-in-out infinite;
 }
 
@@ -93,6 +177,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cargo-loading {
+    animation: none;
+  }
+
+  .cargo-loading-text,
+  .cargo-loading-panel--top,
+  .cargo-loading-panel--left,
+  .cargo-loading-panel--right {
     animation: none;
   }
 }

@@ -80,6 +80,12 @@ export default function OrientationCard({ liveData }) {
               flexGrow: 1,
             }}
           >
+            <div className="cargo-orient-scan" aria-hidden>
+              <span className="cargo-orient-scan-ring cargo-orient-scan-ring--one" />
+              <span className="cargo-orient-scan-ring cargo-orient-scan-ring--two" />
+              <span className="cargo-orient-scan-ring cargo-orient-scan-ring--three" />
+              <span className="cargo-orient-scan-sweep" />
+            </div>
             {modelReady ? (
               <Canvas camera={{ position: [0, 1, 3.6], fov: 35 }}>
                 <ambientLight intensity={0.8} />

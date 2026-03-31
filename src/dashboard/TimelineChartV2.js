@@ -103,8 +103,6 @@ export default function TimelineChartV2({ drops, peakEvents }) {
             key={`${row.t}-${row.idx}`}
             className={`cargo-drop-card cargo-drop-card--${impactTone(row.g)}`}
           >
-            <span className="cargo-drop-orb cargo-drop-orb--one" aria-hidden />
-            <span className="cargo-drop-orb cargo-drop-orb--two" aria-hidden />
             <div className="cargo-drop-card-header">
               <span className="cargo-drop-chip">Drop #{index + 1}</span>
               <span className="cargo-drop-peak">
@@ -117,27 +115,27 @@ export default function TimelineChartV2({ drops, peakEvents }) {
                 {row.date || row.time ? [row.date, row.time].filter(Boolean).join(' | ') : (row.t || 'Time: --')}
               </span>
               <div className="cargo-drop-stats">
-                <span className="cargo-drop-stat">
+                <span className="cargo-drop-stat cargo-drop-stat--temp">
                   <small>Temp</small>
                   <strong>{row.temp != null ? row.temp.toFixed(1) : '--'}</strong>
                   <em>C</em>
                 </span>
-                <span className="cargo-drop-stat">
+                <span className="cargo-drop-stat cargo-drop-stat--humidity">
                   <small>Humidity</small>
                   <strong>{row.humidity != null ? row.humidity.toFixed(1) : '--'}</strong>
                   <em>%</em>
                 </span>
-                <span className="cargo-drop-stat">
+                <span className="cargo-drop-stat cargo-drop-stat--ldr">
                   <small>LDR</small>
                   <strong>{row.ldr != null ? row.ldr.toFixed(1) : '--'}</strong>
                   <em>%</em>
                 </span>
-                <span className="cargo-drop-stat">
+                <span className="cargo-drop-stat cargo-drop-stat--flex">
                   <small>Flex</small>
                   <strong>{row.flex != null ? row.flex.toFixed(1) : '--'}</strong>
                   <em>%</em>
                 </span>
-                <span className="cargo-drop-stat cargo-drop-stat--wide">
+                <span className="cargo-drop-stat cargo-drop-stat--wide cargo-drop-stat--height">
                   <small>Height</small>
                   <strong>{row.height != null ? row.height.toFixed(2) : '--'}</strong>
                   <em>m</em>
