@@ -149,7 +149,7 @@ function App() {
       isOtpVerifiedInitial: isOtpVerified,
     });
     // #endregion
-  }, []);
+  }, [isOtpVerified]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -268,8 +268,6 @@ function App() {
       debugLog('H10', 'src/App.js:socket', 'Socket connect_error', {
         errName: err?.name,
         errMessage: err?.message,
-        API_BASE_URL,
-        isOtpVerified,
       });
     });
     // #endregion
