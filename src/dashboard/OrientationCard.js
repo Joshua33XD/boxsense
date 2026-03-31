@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import './OrientationCard.css';
 import CssBox from './CssBox';
@@ -10,8 +10,7 @@ function parseNum(v) {
   return Number.isNaN(n) ? null : n;
 }
 
-function CargoModel({ roll, pitch, yaw }) {
-  const gltf = useLoader(GLTFLoader, '/models/cardboard-box.glb');
+function CargoModel({ scene, roll, pitch, yaw }) {
   const rotation = useMemo(
     () => [(pitch * Math.PI) / 180, (yaw * Math.PI) / 180, (roll * Math.PI) / 180],
     [pitch, yaw, roll],
@@ -19,7 +18,7 @@ function CargoModel({ roll, pitch, yaw }) {
 
   return (
     <group rotation={rotation}>
-      <primitive object={gltf.scene} scale={1.2} />
+      <primitive object={scene} scale={1.2} />
     </group>
   );
 }
@@ -27,6 +26,7 @@ function CargoModel({ roll, pitch, yaw }) {
 export default function OrientationCard({ liveData }) {
   const [autoYaw, setAutoYaw] = useState(0);
   const [modelReady, setModelReady] = useState(false);
+  const [modelScene, setModelScene] = useState(null);
   const roll = parseNum(liveData?.roll) ?? 0;
   const pitch = parseNum(liveData?.pitch) ?? 0;
   const yaw = parseNum(liveData?.yaw) ?? 0;
@@ -40,15 +40,21 @@ export default function OrientationCard({ liveData }) {
 
   useEffect(() => {
     let alive = true;
-    fetch('/models/cardboard-box.glb', { cache: 'no-store' })
-      .then((res) => {
+    const loader = new GLTFLoader();
+    loader.load(
+      '/models/cardboard-box.glb',
+      (gltf) => {
         if (!alive) return;
-        setModelReady(res.ok);
-      })
-      .catch(() => {
+        setModelScene(gltf?.scene ?? null);
+        setModelReady(true);
+      },
+      undefined,
+      () => {
         if (!alive) return;
+        setModelScene(null);
         setModelReady(false);
-      });
+      },
+    );
 
     return () => {
       alive = false;
@@ -79,7 +85,12 @@ export default function OrientationCard({ liveData }) {
                 <ambientLight intensity={0.8} />
                 <directionalLight position={[2, 4, 3]} intensity={1} />
                 <directionalLight position={[-2, 2, -3]} intensity={0.35} />
-                <CargoModel roll={roll} pitch={pitch} yaw={yaw + autoYaw} />
+                <CargoModel
+                  scene={modelScene}
+                  roll={roll}
+                  pitch={pitch}
+                  yaw={yaw + autoYaw}
+                />
               </Canvas>
             ) : (
               <div
