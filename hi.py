@@ -7,7 +7,7 @@ import threading
 from datetime import datetime, timezone
 from collections import deque
 from bleak import BleakClient
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 
@@ -32,6 +32,22 @@ _drops = deque(maxlen=MAX_DROPS)
 _state_lock = threading.Lock()
 _esp_connected = False
 _DEBUG_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "debug-15e355.log")
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_BUILD_CANDIDATES = [
+    os.path.join(_BASE_DIR, "web-build"),
+    os.path.join(_BASE_DIR, "build"),
+]
+
+
+def _resolve_build_dir():
+    for candidate in _BUILD_CANDIDATES:
+        if os.path.isfile(os.path.join(candidate, "index.html")):
+            return candidate
+    return _BUILD_CANDIDATES[0]
+
+
+_BUILD_DIR = _resolve_build_dir()
+_BUILD_INDEX = os.path.join(_BUILD_DIR, "index.html")
 
 
 def _debug_log(hypothesis_id: str, location: str, message: str, data: dict):
@@ -493,6 +509,30 @@ def on_connect():
         emit("drops_batch", drops)
     if raw_entries:
         emit("raw_data_batch", raw_entries)
+
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    """Serve the built React app from Flask so a single public URL can host UI + API."""
+    if path == "api" or path.startswith("api/") or path.startswith("socket.io"):
+        return jsonify({"ok": False, "error": "not_found"}), 404
+
+    if path:
+        asset_path = os.path.join(_BUILD_DIR, path)
+        if os.path.isfile(asset_path):
+            return send_from_directory(_BUILD_DIR, path)
+
+    if os.path.isfile(_BUILD_INDEX):
+        return send_from_directory(_BUILD_DIR, "index.html")
+
+    return jsonify(
+        {
+            "ok": False,
+            "error": "frontend_not_built",
+            "hint": "Run npm run build to generate the React UI before opening the web URL.",
+        }
+    ), 404
 
 
 # ---------------- MAIN ----------------
