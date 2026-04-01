@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/static/css/main.e7345a7d.css",
+    "main.js": "/static/js/main.379d6a5f.js",
+    "static/media/cardboard-box-basecolor.png": "/static/media/cardboard-box-basecolor.bc65e181cdfdd6d36d05.png",
+    "index.html": "/index.html",
+    "main.e7345a7d.css.map": "/static/css/main.e7345a7d.css.map",
+    "main.379d6a5f.js.map": "/static/js/main.379d6a5f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e7345a7d.css",
+    "static/js/main.379d6a5f.js"
+  ]
+}
