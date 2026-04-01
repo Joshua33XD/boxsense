@@ -142,7 +142,12 @@ function App() {
   }, [fetchData]);
 
   useEffect(() => {
-    const socket = io(API_BASE_URL, { transports: ['websocket', 'polling'] });
+    // Flask-SocketIO in threading/Werkzeug mode is stable with long-polling.
+    // Prevent websocket upgrade attempts that cause repeated 500s on /socket.io.
+    const socket = io(API_BASE_URL, {
+      transports: ['polling'],
+      upgrade: false,
+    });
     socketRef.current = socket;
 
     // #region agent log
