@@ -1,360 +1,512 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { io } from 'socket.io-client';
-import './App.css';
+import asyncio
+import csv
+import json
+import os
+import sys
+import threading
+from datetime import datetime, timezone
+from collections import deque
+from bleak import BleakClient
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 
-import { SECTION_SCROLL } from './dashboard/navConfig';
-import Sidebar from './dashboard/Sidebar';
-import MobileBottomNav from './dashboard/MobileBottomNav';
-import TopBar from './dashboard/TopBar';
-import SafetyCard from './dashboard/SafetyCard';
-import OrientationCard from './dashboard/OrientationCard';
-import EnvironmentCard from './dashboard/EnvironmentCard';
-import MotionChart from './dashboard/MotionChart';
-import TimelineChart from './dashboard/TimelineChartV2';
-import PeaksStrip from './dashboard/PeaksStrip';
-import RawPanel from './dashboard/RawPanel';
-import './dashboard/Dashboard.css';
+# ---------------- CONFIG ----------------
+ESP_ADDRESS = "9C:13:9E:CE:8F:B2"
+CHAR_UUID = "abcd1234-1234-1234-1234-1234567890ab"
+MAX_RAW_DATA_ENTRIES = 1000
+MAX_PEAK_EVENTS = 1000
+MAX_DROPS = 1000
 
-// Use explicit env URL when provided; otherwise rely on same-origin/proxy.
-// This avoids hardcoding localhost, which breaks on deployed or remote clients.
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const DEBUG_ENDPOINT =
-  'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
-const DEBUG_SESSION_ID = '15e355';
-const DEBUG_RUN_ID = 'run_initial';
+# ---------------- LIVE & PEAK DATA ----------------
+live_data = {"T": 0, "H": 0, "R": 0, "P": 0, "Y": 0, "G": 0, "L": 0, "F": 0}
 
-function debugLog(hypothesisId, location, message, data) {
-  fetch(DEBUG_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': DEBUG_SESSION_ID,
-    },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION_ID,
-      runId: DEBUG_RUN_ID,
-      hypothesisId,
-      location,
-      message,
-      data,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-}
+peak_keys = ["TEMP", "HUM", "LDR", "FLEX", "G", "HGT"]
+peak_data = {key: 0 for key in peak_keys}
+peak_ts = {key: "" for key in peak_keys}
 
-function App() {
-  const [liveData, setLiveData] = useState({});
-  const [peakEvents, setPeakEvents] = useState([]);
-  const [rawData, setRawData] = useState([]);
-  const [drops, setDrops] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState(null);
-  const [espConnected, setEspConnected] = useState(false);
-  const [activeNav, setActiveNav] = useState('overview');
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem('cargo-theme') || 'dark',
-  );
-  const [motionSeries, setMotionSeries] = useState([]);
-  const motionBufRef = useRef([]);
-  const socketRef = useRef(null);
-  
+# ---------------- PEAK EVENTS, RAW DATA & DROPS (for React) ----------------
+_peak_events = []
+_raw_data = deque(maxlen=MAX_RAW_DATA_ENTRIES)
+_drops = deque(maxlen=MAX_DROPS)
+_state_lock = threading.Lock()
+_esp_connected = False
+_DEBUG_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "debug-15e355.log")
 
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('cargo-theme', theme);
-  }, [theme]);
-
-  const fetchData = useCallback(async () => {
-    try {
-      debugLog('H14', 'src/App.js:fetchData', 'fetchData start', {
-        API_BASE_URL,
-      });
-      const [liveResponse, peakEventsResponse, rawDataResponse, statusResponse, dropsResponse] =
-        await Promise.all([
-          fetch(`${API_BASE_URL}/api/live`),
-          fetch(`${API_BASE_URL}/api/peak-events`),
-          fetch(`${API_BASE_URL}/api/raw-data`),
-          fetch(`${API_BASE_URL}/api/status`),
-          fetch(`${API_BASE_URL}/api/drops`),
-        ]);
-
-      if (
-        !liveResponse.ok ||
-        !peakEventsResponse.ok ||
-        !rawDataResponse.ok ||
-        !statusResponse.ok
-      ) {
-        throw new Error('Dashboard API is unavailable');
-      }
-
-      const liveDataData = await liveResponse.json();
-      const peakEventsData = await peakEventsResponse.json();
-      const rawDataData = await rawDataResponse.json();
-      // #region agent log
-      debugLog('H2', 'src/App.js:fetchData', 'API payload snapshot', {
-        liveKeys: Object.keys(liveDataData || {}),
-        liveConnected: liveDataData?.connected,
-        rawCount: Array.isArray(rawDataData) ? rawDataData.length : -1,
-        peakCount: Array.isArray(peakEventsData) ? peakEventsData.length : -1,
-      });
-      // #endregion
-      let dropsData = [];
-      try {
-        dropsData = dropsResponse.ok ? await dropsResponse.json() : [];
-      } catch {
-        dropsData = [];
-      }
-      if (!Array.isArray(dropsData)) dropsData = [];
-
-      try {
-        const statusData = statusResponse.ok ? await statusResponse.json() : {};
-        if (typeof statusData.connected === 'boolean') {
-          setEspConnected(statusData.connected);
-        }
-      } catch {
-        /* ignore */
-      }
-
-      if (liveDataData && typeof liveDataData === 'object') {
-        setLiveData(liveDataData);
-        if (typeof liveDataData.connected === 'boolean') {
-          setEspConnected(liveDataData.connected);
-        }
-      } else {
-        setLiveData({});
-      }
-
-      setPeakEvents(Array.isArray(peakEventsData) ? peakEventsData : []);
-      setRawData(Array.isArray(rawDataData) ? rawDataData : []);
-      setDrops(dropsData);
-      setLastUpdate(new Date());
-      setLoading(false);
-    } catch (error) {
-      // #region agent log
-      debugLog('H1', 'src/App.js:fetchData', 'API fetch failed', {
-        name: error?.name,
-        message: error?.message,
-      });
-      // #endregion
-      console.error('Error fetching data:', error);
-      setLiveData({});
-      setPeakEvents([]);
-      setRawData([]);
-      setDrops([]);
-      setEspConnected(false);
-      setLastUpdate(new Date());
-      setLoading(false);
+def _debug_log(hypothesis_id: str, location: str, message: str, data: dict):
+    entry = {
+        "sessionId": "15e355",
+        "runId": "run_initial",
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(datetime.now().timestamp() * 1000),
     }
-  }, []);
+    try:
+        with open(_DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=True) + "\n")
+    except Exception:
+        pass
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
-  useEffect(() => {
-    // Flask-SocketIO in threading/Werkzeug mode is stable with long-polling.
-    // Prevent websocket upgrade attempts that cause repeated 500s on /socket.io.
-    const socket = io(API_BASE_URL, {
-      transports: ['polling'],
-      upgrade: false,
-    });
-    socketRef.current = socket;
+def _set_esp_connected(connected: bool):
+    global _esp_connected
+    with _state_lock:
+        _esp_connected = connected
+    try:
+        with app.app_context():
+            socketio.emit("esp_status", {"connected": connected})
+    except Exception:
+        pass
 
-    // #region agent log
-    socket.on('connect_error', (err) => {
-      debugLog('H10', 'src/App.js:socket', 'Socket connect_error', {
-        errName: err?.name,
-        errMessage: err?.message,
-      });
-    });
-    // #endregion
+# ---------------- FLASK + SOCKETIO ----------------
+app = Flask(__name__)
+app.config["SECRET_KEY"] = "esp32-dashboard"
+CORS(app, origins=["*"])
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-    socket.on('esp_status', (payload) => {
-      // #region agent log
-      debugLog('H3', 'src/App.js:socket', 'esp_status received', {
-        connected: payload?.connected,
-      });
-      // #endregion
-      if (payload && typeof payload.connected === 'boolean') {
-        setEspConnected(payload.connected);
-      }
-    });
+# ---------------- EMAIL OTP (email_otp/) ----------------
+_EMAIL_OTP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "email_otp")
+if _EMAIL_OTP_DIR not in sys.path:
+    sys.path.insert(0, _EMAIL_OTP_DIR)
 
-    socket.on('live_data', (payload) => {
-      // #region agent log
-      debugLog('H4', 'src/App.js:socket', 'live_data received', {
-        keys: Object.keys(payload || {}),
-        temp: payload?.temp,
-        humidity: payload?.humidity,
-        roll: payload?.roll,
-        pitch: payload?.pitch,
-        yaw: payload?.yaw,
-        g: payload?.g,
-      });
-      // #endregion
-      if (payload && typeof payload === 'object') {
-        setLiveData((prev) => ({ ...prev, ...payload }));
-        setLastUpdate(new Date());
-        if (payload.connected === true) setEspConnected(true);
-      }
-    });
+_otp_store = None
 
-    socket.on('peak_event', (event) => {
-      if (event && typeof event === 'object') {
-        setPeakEvents((prev) => [event, ...prev].slice(0, 1000));
-      }
-    });
 
-    socket.on('peak_events_batch', (events) => {
-      if (events && Array.isArray(events)) {
-        setPeakEvents(events);
-      }
-    });
+def _otp_env_configured():
+    return bool(os.environ.get("OTP_PEPPER") and os.environ.get("MAIL_FROM"))
 
-    socket.on('raw_data', (entry) => {
-      if (entry && typeof entry === 'object') {
-        setRawData((prev) => [...prev, entry].slice(-1000));
-      }
-    });
 
-    socket.on('raw_data_batch', (entries) => {
-      if (entries && Array.isArray(entries)) {
-        setRawData(entries);
-      }
-    });
+def _get_otp_store():
+    global _otp_store
+    if not _otp_env_configured():
+        return None
+    if _otp_store is None:
+        from otp_logic import OTPStore
 
-    socket.on('drop_event', (entry) => {
-      if (entry && typeof entry === 'object') {
-        setDrops((prev) => [entry, ...prev].slice(0, 1000));
-      }
-    });
+        _otp_store = OTPStore(
+            os.environ["OTP_PEPPER"],
+            ttl_s=int(os.environ.get("OTP_TTL_S", "300")),
+            max_attempts=int(os.environ.get("OTP_MAX_ATTEMPTS", "5")),
+            min_resend_s=int(os.environ.get("OTP_RESEND_COOLDOWN_S", "60")),
+        )
+    return _otp_store
 
-    socket.on('drops_batch', (entries) => {
-      if (entries && Array.isArray(entries)) {
-        setDrops(entries);
-      }
-    });
 
-    return () => {
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, []);
+def _otp_body_email(data: dict):
+    if not data:
+        return None
+    return data.get("email") or data.get("user_email")
 
-  useEffect(() => {
-    const g = liveData?.g;
-    if (g == null || g === '') return;
-    const parsed = parseFloat(g);
-    if (Number.isNaN(parsed)) return;
-    const now = Date.now();
-    const windowMs = 62000;
-    motionBufRef.current = motionBufRef.current
-      .filter((point) => now - point.t < windowMs)
-      .concat([
+
+def _add_peak_event(parameter: str, value: float):
+    """Append peak event for React Drop History."""
+    now = datetime.now()
+    event = {
+        "parameter": parameter,
+        "value": value,
+        "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "date": now.strftime("%Y-%m-%d"),
+        "time": now.strftime("%H:%M:%S"),
+    }
+    with _state_lock:
+        _peak_events.append(event)
+        if len(_peak_events) > MAX_PEAK_EVENTS:
+            _peak_events.pop(0)
+    try:
+        socketio.emit("peak_event", event)
+    except Exception:
+        pass
+
+
+def _latest_peak_snapshot():
+    """Capture the latest known peak values and timestamps for drop history."""
+    return {
+        "temperature": peak_data.get("TEMP", 0),
+        "temperature_time": peak_ts.get("TEMP", ""),
+        "humidity": peak_data.get("HUM", 0),
+        "humidity_time": peak_ts.get("HUM", ""),
+        "ldr": peak_data.get("LDR", 0),
+        "ldr_time": peak_ts.get("LDR", ""),
+        "flex": peak_data.get("FLEX", 0),
+        "flex_time": peak_ts.get("FLEX", ""),
+        "peak_g": peak_data.get("G", 0),
+        "peak_g_time": peak_ts.get("G", ""),
+        "height": peak_data.get("HGT", 0),
+        "height_time": peak_ts.get("HGT", ""),
+    }
+
+
+def _add_raw_data(message: str):
+    """Store raw BLE message for React."""
+    entry = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "data": message}
+    with _state_lock:
+        _raw_data.append(entry)
+    try:
+        socketio.emit("raw_data", entry)
+    except Exception:
+        pass
+
+
+def _emit_live():
+    """Emit live data in React format (temp, humidity, roll, pitch, yaw, g, ldr, flex)."""
+    payload = {
+        "temp": live_data.get("T"),
+        "humidity": live_data.get("H"),
+        "roll": live_data.get("R"),
+        "pitch": live_data.get("P"),
+        "yaw": live_data.get("Y"),
+        "g": live_data.get("G"),
+        "ldr": live_data.get("L"),
+        "flex": live_data.get("F"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+        "connected": True,  # Receiving BLE data means ESP is connected
+    }
+    try:
+        with app.app_context():
+            socketio.emit("live_data", payload)
+    except Exception:
+        pass
+
+
+# ---------------- BLE NOTIFICATION HANDLER ----------------
+def notification_handler(sender, data):
+    message = data.decode().strip()
+    # #region agent log
+    print(f"[BLE_RX] {message}")
+    _debug_log(
+        "H6",
+        "hi.py:notification_handler",
+        "BLE packet received",
+        {"sender": str(sender), "raw": message},
+    )
+    # #endregion
+    _add_raw_data(message)
+
+    # ---------------- LIVE DATA ----------------
+    if message.startswith("LIVE"):
+        try:
+            parts = message.split(",")[1:]
+            data_dict = {}
+            for item in parts:
+                if "=" in item:
+                    key, value = item.split("=", 1)
+                    data_dict[key] = value
+            live_data["T"] = float(data_dict.get("T", 0) or 0)
+            live_data["H"] = float(data_dict.get("H", 0) or 0)
+            live_data["R"] = float(data_dict.get("R", 0) or 0)
+            live_data["P"] = float(data_dict.get("P", 0) or 0)
+            live_data["Y"] = float(data_dict.get("Y", 0) or 0)
+            live_data["G"] = float(data_dict.get("G", 0) or 0)
+            live_data["L"] = float(data_dict.get("L", 0) or 0)
+            live_data["F"] = float(data_dict.get("F", 0) or 0)
+            _emit_live()
+        except Exception:
+            print("LIVE RAW:", message)
+
+    # ---------------- PEAK DATA ----------------
+    elif message.startswith("PEAKS"):
+        try:
+            parts = message.split(",")[1:]
+            param_map = {"G": "G-Force", "HGT": "Height", "TEMP": "Temperature", "HUM": "Humidity", "LDR": "LDR", "FLEX": "FLEX"}
+            for item in parts:
+                if "=" in item:
+                    key, val = item.split("=", 1)
+                    if "@" in val:
+                        num, ts = val.split("@", 1)
+                        ts = ts.strip()
+                    else:
+                        num = val
+                        ts = ""
+                    try:
+                        v = float(num)
+                        old = peak_data.get(key, 0)
+                        peak_data[key] = v
+                        peak_ts[key] = ts
+                        if v > old or old == 0:
+                            _add_peak_event(param_map.get(key, key), v)
+                    except Exception:
+                        pass
+        except Exception:
+            print("PEAK RAW:", message)
+
+    # ---------------- DROP DATA ----------------
+    elif message.startswith("DROP"):
+        try:
+            parts = message.split(",")[1:]
+            data_dict = {}
+            for item in parts:
+                if "=" in item:
+                    key, value = item.split("=", 1)
+                    data_dict[key] = value
+            pc_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            peak_snapshot = _latest_peak_snapshot()
+            drop_entry = {
+                "pc_time": pc_time,
+                "device_time": data_dict.get("TIME", ""),
+                "date": pc_time.split(" ")[0],
+                "time": pc_time.split(" ")[1] if " " in pc_time else "",
+                "intensity": data_dict.get("INT", ""),
+                "peak_g": peak_snapshot["peak_g"] or data_dict.get("PG", ""),
+                "peak_g_time": peak_snapshot["peak_g_time"],
+                "height": peak_snapshot["height"] or data_dict.get("H", ""),
+                "height_time": peak_snapshot["height_time"],
+                "temperature": peak_snapshot["temperature"],
+                "temperature_time": peak_snapshot["temperature_time"],
+                "humidity": peak_snapshot["humidity"],
+                "humidity_time": peak_snapshot["humidity_time"],
+                "ldr": peak_snapshot["ldr"] or data_dict.get("L", ""),
+                "ldr_time": peak_snapshot["ldr_time"],
+                "flex": peak_snapshot["flex"] or data_dict.get("F", ""),
+                "flex_time": peak_snapshot["flex_time"],
+            }
+            with _state_lock:
+                _drops.append(drop_entry)
+            try:
+                socketio.emit("drop_event", drop_entry)
+            except Exception:
+                pass
+        except Exception:
+            print("DROP RAW:", message)
+
+
+# ---------------- SEND TIME TO ESP ----------------
+async def send_time_to_esp(client):
+    current_epoch = int(datetime.now().timestamp())
+    time_packet = f"TIME={current_epoch}"
+    await client.write_gatt_char(CHAR_UUID, time_packet.encode())
+    print("🕒 Time synced to ESP")
+
+
+# ---------------- CONNECTION LOOP ----------------
+async def connect_loop():
+    global _esp_connected
+    while True:
+        print("\n🔄 Trying to connect...")
+        try:
+            async with BleakClient(ESP_ADDRESS) as client:
+                print("✅ Connected to ESP32!")
+                _set_esp_connected(True)
+                await send_time_to_esp(client)
+                await client.start_notify(CHAR_UUID, notification_handler)
+                while client.is_connected:
+                    await asyncio.sleep(1)
+                print("⚠️ Device disconnected.")
+        except Exception as e:
+            print("❌ Connection error:", e)
+        _set_esp_connected(False)
+        await asyncio.sleep(2)
+
+
+def run_async_loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(connect_loop())
+
+
+# ---------------- API ROUTES ----------------
+@app.get("/api/status")
+def get_status():
+    """ESP32 BLE connection status for React."""
+    # #region agent log
+    _debug_log(
+        "H7",
+        "hi.py:get_status",
+        "status endpoint hit",
+        {"esp_connected": _esp_connected},
+    )
+    # #endregion
+    with _state_lock:
+        return jsonify({"connected": _esp_connected})
+
+
+@app.get("/api/live")
+def get_live():
+    """Live sensor data for React (temp, humidity, roll, pitch, yaw, g, ldr, flex)."""
+    with _state_lock:
+        connected = _esp_connected
+    # #region agent log
+    _debug_log(
+        "H8",
+        "hi.py:get_live",
+        "live endpoint hit",
         {
-          t: now,
-          g: parsed,
-          impact: parsed >= 2.8 ? parsed : null,
+            "connected": connected,
+            "temp": live_data.get("T"),
+            "humidity": live_data.get("H"),
+            "roll": live_data.get("R"),
+            "pitch": live_data.get("P"),
+            "yaw": live_data.get("Y"),
+            "g": live_data.get("G"),
+            "ldr": live_data.get("L"),
+            "flex": live_data.get("F"),
         },
-      ]);
-    setMotionSeries(motionBufRef.current.slice(-400));
-  }, [liveData?.g]);
+    )
+    # #endregion
+    return jsonify({
+        "temp": live_data.get("T"),
+        "humidity": live_data.get("H"),
+        "roll": live_data.get("R"),
+        "pitch": live_data.get("P"),
+        "yaw": live_data.get("Y"),
+        "g": live_data.get("G"),
+        "ldr": live_data.get("L"),
+        "flex": live_data.get("F"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+        "connected": connected,
+    })
 
-  useEffect(() => {
-    // #region agent log
-    debugLog('H5', 'src/App.js:render', 'render snapshot', {
-      espConnected,
-      liveKeys: Object.keys(liveData || {}),
-      sample: {
-        temp: liveData?.temp,
-        humidity: liveData?.humidity,
-        roll: liveData?.roll,
-        pitch: liveData?.pitch,
-        yaw: liveData?.yaw,
-        g: liveData?.g,
-      },
-      rawCount: rawData.length,
-      peakCount: peakEvents.length,
-    });
-    // #endregion
-  }, [espConnected, liveData, rawData.length, peakEvents.length]);
 
-  const handleRefresh = useCallback(() => {
-    setLoading(true);
-    fetchData();
-  }, [fetchData]);
+@app.get("/api/peak-events")
+def get_peak_events():
+    """Peak events for React Drop History."""
+    with _state_lock:
+        return jsonify(list(reversed(_peak_events[-MAX_PEAK_EVENTS:])))
 
-  const onNavigate = useCallback((id) => {
-    setActiveNav(id);
-    const elId = SECTION_SCROLL[id];
-    if (elId) {
-      document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
 
-  const toggleTheme = useCallback(() => {
-    setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
-  }, []);
+@app.get("/api/raw-data")
+def get_raw_data():
+    """Raw BLE messages for React."""
+    with _state_lock:
+        return jsonify(list(_raw_data))
 
-  return (
-    <div className="dashboard-root">
-      <Sidebar
-        activeId={activeNav}
-        onNavigate={onNavigate}
-        espConnected={espConnected}
-      />
-      <div className="dashboard-main-wrap">
-        <TopBar
-          espConnected={espConnected}
-          lastUpdate={lastUpdate}
-          theme={theme}
-          loading={loading}
-          onToggleTheme={toggleTheme}
-          onRefresh={handleRefresh}
-        />
-        <main className="dashboard-content dashboard-content--scroll">
-          {loading && peakEvents.length === 0 && rawData.length === 0 ? (
-            <div className="cargo-loading" aria-live="polite">
-              <span className="cargo-loading-box" aria-hidden>
-                <span className="cargo-loading-panel cargo-loading-panel--top" />
-                <span className="cargo-loading-panel cargo-loading-panel--left" />
-                <span className="cargo-loading-panel cargo-loading-panel--right" />
-              </span>
-              <span className="cargo-loading-text">Loading peak values...</span>
-            </div>
-          ) : null}
 
-          <div id="dash-overview" className="dashboard-grid">
-            <SafetyCard
-              liveData={liveData}
-              peakEvents={peakEvents}
-              espConnected={espConnected}
-            />
-            <OrientationCard liveData={liveData} />
-            <EnvironmentCard liveData={liveData} />
-          </div>
+@app.get("/api/drops")
+def get_drops():
+    """Drop events for React, kept in memory (no CSV)."""
+    with _state_lock:
+        # Most recent first, same field names the frontend already expects
+        return jsonify(list(reversed(list(_drops))))
 
-          <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-            <PeaksStrip peakEvents={peakEvents} />
-          </div>
 
-          <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-            <MotionChart series={motionSeries} />
-          </div>
+@app.get("/api/otp/config")
+def api_otp_config():
+    """Whether OTP email env is set (OTP_PEPPER + MAIL_FROM)."""
+    return jsonify({"configured": _otp_env_configured()})
 
-          <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-            <TimelineChart drops={drops} peakEvents={peakEvents} />
-          </div>
 
-          <div className="dashboard-grid" style={{ marginTop: '1rem' }}>
-            <RawPanel rawData={rawData} />
-          </div>
-        </main>
-        <MobileBottomNav activeId={activeNav} onNavigate={onNavigate} />
-      </div>
-    </div>
-  );
-}
+@app.post("/api/otp/request")
+def api_otp_request():
+    """Send 6-digit code to email. JSON: { \"email\" } or { \"user_email\" }."""
+    from otp_logic import normalize_email
+    from mail_send import MailSendError, send_otp_email
 
-export default App;
+    if not _otp_env_configured():
+        return jsonify({"ok": False, "error": "otp_not_configured"}), 503
+
+    store = _get_otp_store()
+    data = request.get_json(silent=True) or {}
+    raw = _otp_body_email(data)
+    if not raw:
+        return jsonify({"ok": False, "error": "email or user_email required"}), 400
+    try:
+        email = normalize_email(str(raw))
+    except ValueError:
+        return jsonify({"ok": False, "error": "invalid email"}), 400
+
+    allowed, wait = store.can_send(email)
+    if not allowed:
+        return jsonify(
+            {
+                "ok": False,
+                "error": "rate_limited",
+                "retry_after_s": round(wait or 0, 1),
+            }
+        ), 429
+
+    code = store.create(email)
+    try:
+        send_otp_email(
+            email,
+            code,
+            minutes=int(os.environ.get("OTP_TTL_MINUTES", "5")),
+        )
+    except MailSendError as e:
+        store.discard(email)
+        return jsonify(
+            {
+                "ok": False,
+                "error": "email_send_failed",
+                "detail": str(e),
+                "extra": getattr(e, "detail", None),
+            }
+        ), 502
+
+    store.mark_delivered(email)
+    if os.environ.get("OTP_DEBUG", "").lower() in ("1", "true", "yes"):
+        print(f"[OTP_DEBUG] {email} -> {code}")
+
+    return jsonify({"ok": True, "message": "otp_sent"})
+
+
+@app.post("/api/otp/verify")
+def api_otp_verify():
+    """Verify code. JSON: { \"email\", \"code\" }."""
+    from otp_logic import normalize_email
+
+    if not _otp_env_configured():
+        return jsonify({"ok": False, "error": "otp_not_configured"}), 503
+
+    store = _get_otp_store()
+    data = request.get_json(silent=True) or {}
+    raw = _otp_body_email(data)
+    code = data.get("code")
+    if not raw or not code:
+        return jsonify(
+            {"ok": False, "error": "email (or user_email) and code required"}
+        ), 400
+    try:
+        email = normalize_email(str(raw))
+    except ValueError:
+        return jsonify({"ok": False, "error": "invalid email"}), 400
+
+    if not store.verify(email, str(code)):
+        return jsonify({"ok": False, "error": "invalid_or_expired"}), 401
+    return jsonify({"ok": True, "verified": True})
+
+
+@socketio.on("connect")
+def on_connect():
+    """Send current state when React client connects."""
+    with _state_lock:
+        peak_events = list(reversed(_peak_events[-100:]))
+        raw_entries = list(_raw_data)[-100:]
+        drops = list(reversed(list(_drops)[-100:]))
+        connected = _esp_connected
+    emit("esp_status", {"connected": connected})
+    emit("live_data", {
+        "temp": live_data.get("T"),
+        "humidity": live_data.get("H"),
+        "roll": live_data.get("R"),
+        "pitch": live_data.get("P"),
+        "yaw": live_data.get("Y"),
+        "g": live_data.get("G"),
+        "ldr": live_data.get("L"),
+        "flex": live_data.get("F"),
+        "connected": connected,
+    })
+    if peak_events:
+        emit("peak_events_batch", peak_events)
+    if drops:
+        emit("drops_batch", drops)
+    if raw_entries:
+        emit("raw_data_batch", raw_entries)
+
+
+# ---------------- MAIN ----------------
+if __name__ == "__main__":
+    # #region agent log
+    _debug_log(
+        "H9",
+        "hi.py:main",
+        "backend process started",
+        {"port_env": os.environ.get("PORT", "5000")},
+    )
+    # #endregion
+    threading.Thread(target=run_async_loop, daemon=True).start()
+    port = int(os.environ.get("PORT", 5000))
+    print(f"🚀 API + WebSocket server on http://0.0.0.0:{port}")
+    print(f"📡 BLE connection running in background")
+    socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
