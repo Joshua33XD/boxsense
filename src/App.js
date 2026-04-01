@@ -17,7 +17,7 @@ import './dashboard/Dashboard.css';
 
 // Use explicit env URL when provided; otherwise rely on same-origin/proxy.
 // This avoids hardcoding localhost, which breaks on deployed or remote clients.
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const DEBUG_ENDPOINT =
   'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
 const DEBUG_SESSION_ID = '15e355';
