@@ -15,12 +15,13 @@ import PeaksStrip from './dashboard/PeaksStrip';
 import RawPanel from './dashboard/RawPanel';
 import './dashboard/Dashboard.css';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Use explicit env URL when provided; otherwise rely on same-origin/proxy.
+// This avoids hardcoding localhost, which breaks on deployed or remote clients.
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 const DEBUG_ENDPOINT =
   'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
-const DEBUG_SESSION_ID = '601a3e';
-const DEBUG_RUN_ID = 'run_before';
-const SITE_ENTRY_OTP = '55446';
+const DEBUG_SESSION_ID = '15e355';
+const DEBUG_RUN_ID = 'run_initial';
 
 function debugLog(hypothesisId, location, message, data) {
   fetch(DEBUG_ENDPOINT, {
@@ -54,10 +55,6 @@ function App() {
     () => localStorage.getItem('cargo-theme') || 'dark',
   );
   const [motionSeries, setMotionSeries] = useState([]);
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [orderIdInput, setOrderIdInput] = useState('');
-  const [otpInput, setOtpInput] = useState('');
-  const [otpError, setOtpError] = useState('');
   const motionBufRef = useRef([]);
   const socketRef = useRef(null);
   
@@ -94,6 +91,14 @@ function App() {
       const liveDataData = await liveResponse.json();
       const peakEventsData = await peakEventsResponse.json();
       const rawDataData = await rawDataResponse.json();
+      // #region agent log
+      debugLog('H2', 'src/App.js:fetchData', 'API payload snapshot', {
+        liveKeys: Object.keys(liveDataData || {}),
+        liveConnected: liveDataData?.connected,
+        rawCount: Array.isArray(rawDataData) ? rawDataData.length : -1,
+        peakCount: Array.isArray(peakEventsData) ? peakEventsData.length : -1,
+      });
+      // #endregion
       let dropsData = [];
       try {
         dropsData = dropsResponse.ok ? await dropsResponse.json() : [];
@@ -126,6 +131,12 @@ function App() {
       setLastUpdate(new Date());
       setLoading(false);
     } catch (error) {
+      // #region agent log
+      debugLog('H1', 'src/App.js:fetchData', 'API fetch failed', {
+        name: error?.name,
+        message: error?.message,
+      });
+      // #endregion
       console.error('Error fetching data:', error);
       setLiveData({});
       setPeakEvents([]);
@@ -160,12 +171,28 @@ function App() {
     // #endregion
 
     socket.on('esp_status', (payload) => {
+      // #region agent log
+      debugLog('H3', 'src/App.js:socket', 'esp_status received', {
+        connected: payload?.connected,
+      });
+      // #endregion
       if (payload && typeof payload.connected === 'boolean') {
         setEspConnected(payload.connected);
       }
     });
 
     socket.on('live_data', (payload) => {
+      // #region agent log
+      debugLog('H4', 'src/App.js:socket', 'live_data received', {
+        keys: Object.keys(payload || {}),
+        temp: payload?.temp,
+        humidity: payload?.humidity,
+        roll: payload?.roll,
+        pitch: payload?.pitch,
+        yaw: payload?.yaw,
+        g: payload?.g,
+      });
+      // #endregion
       if (payload && typeof payload === 'object') {
         setLiveData((prev) => ({ ...prev, ...payload }));
         setLastUpdate(new Date());
@@ -234,6 +261,25 @@ function App() {
     setMotionSeries(motionBufRef.current.slice(-400));
   }, [liveData?.g]);
 
+  useEffect(() => {
+    // #region agent log
+    debugLog('H5', 'src/App.js:render', 'render snapshot', {
+      espConnected,
+      liveKeys: Object.keys(liveData || {}),
+      sample: {
+        temp: liveData?.temp,
+        humidity: liveData?.humidity,
+        roll: liveData?.roll,
+        pitch: liveData?.pitch,
+        yaw: liveData?.yaw,
+        g: liveData?.g,
+      },
+      rawCount: rawData.length,
+      peakCount: peakEvents.length,
+    });
+    // #endregion
+  }, [espConnected, liveData, rawData.length, peakEvents.length]);
+
   const handleRefresh = useCallback(() => {
     setLoading(true);
     fetchData();
@@ -250,98 +296,6 @@ function App() {
   const toggleTheme = useCallback(() => {
     setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
   }, []);
-
-  const onEntryVerify = useCallback(() => {
-    const orderId = orderIdInput.trim();
-    const otp = otpInput.trim();
-    if (!orderId) {
-      setOtpError('Enter your order ID.');
-      return;
-    }
-    if (otp !== SITE_ENTRY_OTP) {
-      setOtpError('Invalid OTP.');
-      return;
-    }
-    setOtpError('');
-    setOtpVerified(true);
-  }, [orderIdInput, otpInput]);
-
-  if (!otpVerified) {
-    return (
-      <div
-        className="dashboard-root"
-        style={{
-          minHeight: '100vh',
-          display: 'grid',
-          placeItems: 'center',
-          padding: '1rem',
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: '560px',
-            padding: '20px',
-            borderRadius: '16px',
-            background: 'rgba(17, 20, 25, 0.9)',
-            border: '1px solid rgba(255,255,255,0.12)',
-          }}
-        >
-          <h2 style={{ marginTop: 0, marginBottom: '12px' }}>Order Verification</h2>
-          <p style={{ marginTop: 0, marginBottom: '16px', opacity: 0.85 }}>
-            Enter your order ID and OTP to continue.
-          </p>
-          <input
-            type="text"
-            placeholder="Order ID"
-            value={orderIdInput}
-            onChange={(e) => setOrderIdInput(e.target.value)}
-            style={{
-              width: '100%',
-              marginBottom: '10px',
-              padding: '10px 12px',
-              borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.18)',
-              background: 'rgba(0,0,0,0.2)',
-              color: 'inherit',
-            }}
-          />
-          <input
-            type="password"
-            placeholder="OTP"
-            value={otpInput}
-            onChange={(e) => setOtpInput(e.target.value)}
-            style={{
-              width: '100%',
-              marginBottom: '10px',
-              padding: '10px 12px',
-              borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.18)',
-              background: 'rgba(0,0,0,0.2)',
-              color: 'inherit',
-            }}
-          />
-          {otpError ? (
-            <div style={{ color: '#ff7a7a', marginBottom: '10px' }}>{otpError}</div>
-          ) : null}
-          <button
-            type="button"
-            onClick={onEntryVerify}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: '10px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 700,
-            }}
-          >
-            Enter Site
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="dashboard-root">

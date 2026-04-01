@@ -1,5 +1,6 @@
 import asyncio
 import csv
+import json
 import os
 import sys
 import threading
@@ -30,6 +31,24 @@ _raw_data = deque(maxlen=MAX_RAW_DATA_ENTRIES)
 _drops = deque(maxlen=MAX_DROPS)
 _state_lock = threading.Lock()
 _esp_connected = False
+_DEBUG_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "debug-15e355.log")
+
+
+def _debug_log(hypothesis_id: str, location: str, message: str, data: dict):
+    entry = {
+        "sessionId": "15e355",
+        "runId": "run_initial",
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(datetime.now().timestamp() * 1000),
+    }
+    try:
+        with open(_DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=True) + "\n")
+    except Exception:
+        pass
 
 
 def _set_esp_connected(connected: bool):
@@ -155,6 +174,15 @@ def _emit_live():
 # ---------------- BLE NOTIFICATION HANDLER ----------------
 def notification_handler(sender, data):
     message = data.decode().strip()
+    # #region agent log
+    print(f"[BLE_RX] {message}")
+    _debug_log(
+        "H6",
+        "hi.py:notification_handler",
+        "BLE packet received",
+        {"sender": str(sender), "raw": message},
+    )
+    # #endregion
     _add_raw_data(message)
 
     # ---------------- LIVE DATA ----------------
@@ -282,6 +310,14 @@ def run_async_loop():
 @app.get("/api/status")
 def get_status():
     """ESP32 BLE connection status for React."""
+    # #region agent log
+    _debug_log(
+        "H7",
+        "hi.py:get_status",
+        "status endpoint hit",
+        {"esp_connected": _esp_connected},
+    )
+    # #endregion
     with _state_lock:
         return jsonify({"connected": _esp_connected})
 
@@ -291,6 +327,24 @@ def get_live():
     """Live sensor data for React (temp, humidity, roll, pitch, yaw, g, ldr, flex)."""
     with _state_lock:
         connected = _esp_connected
+    # #region agent log
+    _debug_log(
+        "H8",
+        "hi.py:get_live",
+        "live endpoint hit",
+        {
+            "connected": connected,
+            "temp": live_data.get("T"),
+            "humidity": live_data.get("H"),
+            "roll": live_data.get("R"),
+            "pitch": live_data.get("P"),
+            "yaw": live_data.get("Y"),
+            "g": live_data.get("G"),
+            "ldr": live_data.get("L"),
+            "flex": live_data.get("F"),
+        },
+    )
+    # #endregion
     return jsonify({
         "temp": live_data.get("T"),
         "humidity": live_data.get("H"),
@@ -443,6 +497,14 @@ def on_connect():
 
 # ---------------- MAIN ----------------
 if __name__ == "__main__":
+    # #region agent log
+    _debug_log(
+        "H9",
+        "hi.py:main",
+        "backend process started",
+        {"port_env": os.environ.get("PORT", "5000")},
+    )
+    # #endregion
     threading.Thread(target=run_async_loop, daemon=True).start()
     port = int(os.environ.get("PORT", 5000))
     print(f"🚀 API + WebSocket server on http://0.0.0.0:{port}")
