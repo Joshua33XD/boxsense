@@ -18,6 +18,7 @@ import './dashboard/Dashboard.css';
 // Use explicit env URL when provided; otherwise rely on same-origin/proxy.
 // This avoids hardcoding localhost, which breaks on deployed or remote clients.
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+<<<<<<< HEAD
 const DEBUG_ENDPOINT =
   'http://127.0.0.1:7274/ingest/45028dbe-909d-4ab6-8d54-6aacd37e93f8';
 const DEBUG_SESSION_ID = '15e355';
@@ -41,6 +42,8 @@ function debugLog(hypothesisId, location, message, data) {
     }),
   }).catch(() => {});
 }
+=======
+>>>>>>> ea6f8d821aa762e8620805211b62fb6807a36b50
 
 function App() {
   const [liveData, setLiveData] = useState({});
@@ -57,8 +60,6 @@ function App() {
   const [motionSeries, setMotionSeries] = useState([]);
   const motionBufRef = useRef([]);
   const socketRef = useRef(null);
-  
-
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -67,9 +68,6 @@ function App() {
 
   const fetchData = useCallback(async () => {
     try {
-      debugLog('H14', 'src/App.js:fetchData', 'fetchData start', {
-        API_BASE_URL,
-      });
       const [liveResponse, peakEventsResponse, rawDataResponse, statusResponse, dropsResponse] =
         await Promise.all([
           fetch(`${API_BASE_URL}/api/live`),
@@ -79,15 +77,11 @@ function App() {
           fetch(`${API_BASE_URL}/api/drops`),
         ]);
 
-      if (
-        !liveResponse.ok ||
-        !peakEventsResponse.ok ||
-        !rawDataResponse.ok ||
-        !statusResponse.ok
-      ) {
-        throw new Error('Dashboard API is unavailable');
-      }
+      const liveDataData = liveResponse.ok ? await liveResponse.json() : {};
+      const peakEventsData = peakEventsResponse.ok ? await peakEventsResponse.json() : [];
+      const rawDataData = rawDataResponse.ok ? await rawDataResponse.json() : [];
 
+<<<<<<< HEAD
       const liveDataData = await liveResponse.json();
       const peakEventsData = await peakEventsResponse.json();
       const rawDataData = await rawDataResponse.json();
@@ -99,6 +93,8 @@ function App() {
         peakCount: Array.isArray(peakEventsData) ? peakEventsData.length : -1,
       });
       // #endregion
+=======
+>>>>>>> ea6f8d821aa762e8620805211b62fb6807a36b50
       let dropsData = [];
       try {
         dropsData = dropsResponse.ok ? await dropsResponse.json() : [];
@@ -148,10 +144,14 @@ function App() {
     }
   }, []);
 
+  // Initial fetch + polling every 2s
   useEffect(() => {
     fetchData();
+    const interval = setInterval(fetchData, 2000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
+  // WebSocket
   useEffect(() => {
     // Flask-SocketIO in threading/Werkzeug mode is stable with long-polling.
     // Prevent websocket upgrade attempts that cause repeated 500s on /socket.io.
@@ -160,15 +160,6 @@ function App() {
       upgrade: false,
     });
     socketRef.current = socket;
-
-    // #region agent log
-    socket.on('connect_error', (err) => {
-      debugLog('H10', 'src/App.js:socket', 'Socket connect_error', {
-        errName: err?.name,
-        errMessage: err?.message,
-      });
-    });
-    // #endregion
 
     socket.on('esp_status', (payload) => {
       // #region agent log
@@ -207,9 +198,7 @@ function App() {
     });
 
     socket.on('peak_events_batch', (events) => {
-      if (events && Array.isArray(events)) {
-        setPeakEvents(events);
-      }
+      if (events && Array.isArray(events)) setPeakEvents(events);
     });
 
     socket.on('raw_data', (entry) => {
@@ -219,9 +208,7 @@ function App() {
     });
 
     socket.on('raw_data_batch', (entries) => {
-      if (entries && Array.isArray(entries)) {
-        setRawData(entries);
-      }
+      if (entries && Array.isArray(entries)) setRawData(entries);
     });
 
     socket.on('drop_event', (entry) => {
@@ -231,9 +218,7 @@ function App() {
     });
 
     socket.on('drops_batch', (entries) => {
-      if (entries && Array.isArray(entries)) {
-        setDrops(entries);
-      }
+      if (entries && Array.isArray(entries)) setDrops(entries);
     });
 
     return () => {
@@ -242,6 +227,7 @@ function App() {
     };
   }, []);
 
+  // Motion series buffer
   useEffect(() => {
     const g = liveData?.g;
     if (g == null || g === '') return;
@@ -251,13 +237,7 @@ function App() {
     const windowMs = 62000;
     motionBufRef.current = motionBufRef.current
       .filter((point) => now - point.t < windowMs)
-      .concat([
-        {
-          t: now,
-          g: parsed,
-          impact: parsed >= 2.8 ? parsed : null,
-        },
-      ]);
+      .concat([{ t: now, g: parsed, impact: parsed >= 2.8 ? parsed : null }]);
     setMotionSeries(motionBufRef.current.slice(-400));
   }, [liveData?.g]);
 
@@ -299,11 +279,7 @@ function App() {
 
   return (
     <div className="dashboard-root">
-      <Sidebar
-        activeId={activeNav}
-        onNavigate={onNavigate}
-        espConnected={espConnected}
-      />
+      <Sidebar activeId={activeNav} onNavigate={onNavigate} espConnected={espConnected} />
       <div className="dashboard-main-wrap">
         <TopBar
           espConnected={espConnected}
@@ -326,11 +302,7 @@ function App() {
           ) : null}
 
           <div id="dash-overview" className="dashboard-grid">
-            <SafetyCard
-              liveData={liveData}
-              peakEvents={peakEvents}
-              espConnected={espConnected}
-            />
+            <SafetyCard liveData={liveData} peakEvents={peakEvents} espConnected={espConnected} />
             <OrientationCard liveData={liveData} />
             <EnvironmentCard liveData={liveData} />
           </div>
